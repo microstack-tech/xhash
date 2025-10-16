@@ -1,9 +1,9 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2021 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
 #include "difficulty.h"
-#include "../../lib/ethash/endianness.hpp"
+#include "../../lib/xhash/endianness.hpp"
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #include <intrin.h>
@@ -24,8 +24,8 @@ inline int clz(uint32_t x) noexcept
 extern "C" {
 // Reduce complexity of this function and enable `readability-function-cognitive-complexity`
 // in clang-tidy.
-[[clang::no_sanitize("unsigned-integer-overflow", "unsigned-shift-base")]] ethash_hash256
-ethash_difficulty_to_boundary(const ethash_hash256* difficulty) noexcept
+[[clang::no_sanitize("unsigned-integer-overflow", "unsigned-shift-base")]] xhash_hash256
+xhash_difficulty_to_boundary(const xhash_hash256* difficulty) noexcept
 {
     constexpr size_t num_words = sizeof(*difficulty) / sizeof(difficulty->word32s[0]);
 
@@ -43,12 +43,12 @@ ethash_difficulty_to_boundary(const ethash_hash256* difficulty) noexcept
     // Bring divisor to native form: native words in little-endian word order.
     uint32_t d[num_words];
     for (size_t i = 0; i < num_words; ++i)
-        d[i] = ethash::be::uint32(difficulty->word32s[num_words - 1 - i]);
+        d[i] = xhash::be::uint32(difficulty->word32s[num_words - 1 - i]);
 
     // For difficulty of 0 (division by 0) or 1 (256-bit overflow) return max boundary value.
     if (n == 0 || (n == 1 && d[0] == 1))
     {
-        return ethash_hash256{
+        return xhash_hash256{
             {0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff}};
     }
 
@@ -143,9 +143,9 @@ ethash_difficulty_to_boundary(const ethash_hash256* difficulty) noexcept
     }
 
     // Convert to big-endian.
-    ethash_hash256 boundary = {};
+    xhash_hash256 boundary = {};
     for (size_t i = 0; i < num_words; ++i)
-        boundary.word32s[i] = ethash::be::uint32(q[num_words - 1 - i]);
+        boundary.word32s[i] = xhash::be::uint32(q[num_words - 1 - i]);
     return boundary;
 }
 }

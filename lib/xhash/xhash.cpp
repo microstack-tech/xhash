@@ -1,15 +1,15 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018-2019 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-#include "ethash-internal.hpp"
+#include "xhash-internal.hpp"
 
 #include "primes.h"
-#include <ethash/keccak.hpp>
+#include <xhash/keccak.hpp>
 #include <cstdlib>
 #include <cstring>
 
-namespace ethash
+namespace xhash
 {
 // Internal constants:
 constexpr static int light_cache_init_size = 1 << 24;
@@ -20,10 +20,10 @@ constexpr static int full_dataset_growth = 1 << 23;
 constexpr static int full_dataset_item_parents = 256;
 
 // Verify constants:
-static_assert(sizeof(hash512) == ETHASH_LIGHT_CACHE_ITEM_SIZE, "");
-static_assert(sizeof(hash1024) == ETHASH_FULL_DATASET_ITEM_SIZE, "");
-static_assert(light_cache_item_size == ETHASH_LIGHT_CACHE_ITEM_SIZE, "");
-static_assert(full_dataset_item_size == ETHASH_FULL_DATASET_ITEM_SIZE, "");
+static_assert(sizeof(hash512) == XHASH_LIGHT_CACHE_ITEM_SIZE, "");
+static_assert(sizeof(hash1024) == XHASH_FULL_DATASET_ITEM_SIZE, "");
+static_assert(light_cache_item_size == XHASH_LIGHT_CACHE_ITEM_SIZE, "");
+static_assert(full_dataset_item_size == XHASH_FULL_DATASET_ITEM_SIZE, "");
 
 
 namespace
@@ -167,7 +167,7 @@ epoch_context_full* create_epoch_context(int epoch_number, bool full) noexcept
 
 /// Calculates a full dataset item.
 ///
-/// This consist of two 512-bit items defined by the Ethash specification, but these items
+/// This consist of two 512-bit items defined by the XHash specification, but these items
 /// are never needed separately. Here the computation is done interleaved for better performance.
 hash1024 calculate_dataset_item_1024(const epoch_context& context, uint32_t index) noexcept
 {
@@ -388,21 +388,21 @@ struct uint128
     const auto high_one = (((p[7] | p[6] | p[5]) == 0) & (p[4] == 1)) != 0;
     return low_zero && high_one;
 }
-}  // namespace ethash
+}  // namespace xhash
 
-using namespace ethash;
+using namespace xhash;
 
 extern "C" {
 
-ethash_hash256 ethash_calculate_epoch_seed(int epoch_number) noexcept
+xhash_hash256 xhash_calculate_epoch_seed(int epoch_number) noexcept
 {
-    ethash_hash256 epoch_seed = {};
+    xhash_hash256 epoch_seed = {};
     for (int i = 0; i < epoch_number; ++i)
-        epoch_seed = ethash_keccak256_32(epoch_seed.bytes);
+        epoch_seed = xhash_keccak256_32(epoch_seed.bytes);
     return epoch_seed;
 }
 
-int ethash_calculate_light_cache_num_items(int epoch_number) noexcept
+int xhash_calculate_light_cache_num_items(int epoch_number) noexcept
 {
     constexpr int item_size = sizeof(hash512);
     constexpr int num_items_init = light_cache_init_size / item_size;
@@ -416,11 +416,11 @@ int ethash_calculate_light_cache_num_items(int epoch_number) noexcept
         return 0;
 
     int num_items_upper_bound = num_items_init + epoch_number * num_items_growth;
-    int num_items = ethash_find_largest_prime(num_items_upper_bound);
+    int num_items = xhash_find_largest_prime(num_items_upper_bound);
     return num_items;
 }
 
-int ethash_calculate_full_dataset_num_items(int epoch_number) noexcept
+int xhash_calculate_full_dataset_num_items(int epoch_number) noexcept
 {
     constexpr int item_size = sizeof(hash1024);
     constexpr int num_items_init = full_dataset_init_size / item_size;
@@ -434,32 +434,32 @@ int ethash_calculate_full_dataset_num_items(int epoch_number) noexcept
         return 0;
 
     int num_items_upper_bound = num_items_init + epoch_number * num_items_growth;
-    int num_items = ethash_find_largest_prime(num_items_upper_bound);
+    int num_items = xhash_find_largest_prime(num_items_upper_bound);
     return num_items;
 }
 
-epoch_context* ethash_create_epoch_context(int epoch_number) noexcept
+epoch_context* xhash_create_epoch_context(int epoch_number) noexcept
 {
     return create_epoch_context(epoch_number, false);
 }
 
-epoch_context_full* ethash_create_epoch_context_full(int epoch_number) noexcept
+epoch_context_full* xhash_create_epoch_context_full(int epoch_number) noexcept
 {
     return create_epoch_context(epoch_number, true);
 }
 
-void ethash_destroy_epoch_context_full(epoch_context_full* context) noexcept
+void xhash_destroy_epoch_context_full(epoch_context_full* context) noexcept
 {
-    ethash_destroy_epoch_context(context);
+    xhash_destroy_epoch_context(context);
 }
 
-void ethash_destroy_epoch_context(epoch_context* context) noexcept
+void xhash_destroy_epoch_context(epoch_context* context) noexcept
 {
     context->~epoch_context();
     std::free(context);
 }
 
-ethash_result ethash_hash(
+xhash_result xhash_hash(
     const epoch_context* context, const hash256* header_hash, uint64_t nonce) noexcept
 {
     const hash512 seed = hash_seed(*header_hash, nonce);
@@ -468,36 +468,36 @@ ethash_result ethash_hash(
 }
 
 
-ethash_errc ethash_verify_final_hash_against_difficulty(const hash256* header_hash,
+xhash_errc xhash_verify_final_hash_against_difficulty(const hash256* header_hash,
     const hash256* mix_hash, uint64_t nonce, const hash256* difficulty) noexcept
 {
     return check_against_difficulty(
                hash_final(hash_seed(*header_hash, nonce), *mix_hash), *difficulty) ?
-               ETHASH_SUCCESS :
-               ETHASH_INVALID_FINAL_HASH;
+               XHASH_SUCCESS :
+               XHASH_INVALID_FINAL_HASH;
 }
 
-ethash_errc ethash_verify_against_boundary(const epoch_context* context, const hash256* header_hash,
+xhash_errc xhash_verify_against_boundary(const epoch_context* context, const hash256* header_hash,
     const hash256* mix_hash, uint64_t nonce, const hash256* boundary) noexcept
 {
     const hash512 seed = hash_seed(*header_hash, nonce);
     if (!less_equal(hash_final(seed, *mix_hash), *boundary))
-        return ETHASH_INVALID_FINAL_HASH;
+        return XHASH_INVALID_FINAL_HASH;
 
     const hash256 expected_mix_hash = hash_kernel(*context, seed, calculate_dataset_item_1024);
-    return equal(expected_mix_hash, *mix_hash) ? ETHASH_SUCCESS : ETHASH_INVALID_MIX_HASH;
+    return equal(expected_mix_hash, *mix_hash) ? XHASH_SUCCESS : XHASH_INVALID_MIX_HASH;
 }
 
-ethash_errc ethash_verify_against_difficulty(const epoch_context* context,
+xhash_errc xhash_verify_against_difficulty(const epoch_context* context,
     const hash256* header_hash, const hash256* mix_hash, uint64_t nonce,
     const hash256* difficulty) noexcept
 {
     const hash512 seed = hash_seed(*header_hash, nonce);
     if (!check_against_difficulty(hash_final(seed, *mix_hash), *difficulty))
-        return ETHASH_INVALID_FINAL_HASH;
+        return XHASH_INVALID_FINAL_HASH;
 
     const hash256 expected_mix_hash = hash_kernel(*context, seed, calculate_dataset_item_1024);
-    return equal(expected_mix_hash, *mix_hash) ? ETHASH_SUCCESS : ETHASH_INVALID_MIX_HASH;
+    return equal(expected_mix_hash, *mix_hash) ? XHASH_SUCCESS : XHASH_INVALID_MIX_HASH;
 }
 
 }  // extern "C"

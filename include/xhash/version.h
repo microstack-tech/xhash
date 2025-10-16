@@ -1,18 +1,18 @@
-/* ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+/* xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
  * Copyright 2019 Pawel Bylica.
  * Licensed under the Apache License, Version 2.0.
  */
 
 #pragma once
 
-/** The ethash library version. */
-#define ETHASH_VERSION "1.1.0"
+/** The xhash library version. */
+#define XHASH_VERSION "1.1.0"
 
 #ifdef __cplusplus
-namespace ethash
+namespace xhash
 {
-/// The ethash library version.
-constexpr auto version = ETHASH_VERSION;
+/// The xhash library version.
+constexpr auto version = XHASH_VERSION;
 
-}  // namespace ethash
+}  // namespace xhash
 #endif

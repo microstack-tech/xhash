@@ -1,10 +1,10 @@
-// Ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// XHash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "keccak_utils.hpp"
 #include <benchmark/benchmark.h>
-#include <ethash/keccak.h>
+#include <xhash/keccak.h>
 
 
 void fake_keccakf1600(uint64_t* state) noexcept  // NOLINT(readability-non-const-parameter)
@@ -21,7 +21,7 @@ static void keccak256(benchmark::State& state)
 
     for (auto _ : state)
     {
-        auto h = ethash_keccak256(data.data(), data.size());
+        auto h = xhash_keccak256(data.data(), data.size());
         benchmark::DoNotOptimize(h.bytes);
     }
 }
@@ -35,7 +35,7 @@ static void keccak512(benchmark::State& state)
 
     for (auto _ : state)
     {
-        auto h = ethash_keccak512(data.data(), data.size());
+        auto h = xhash_keccak512(data.data(), data.size());
         benchmark::DoNotOptimize(h.bytes);
     }
 }

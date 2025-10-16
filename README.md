@@ -1,9 +1,9 @@
-# Ethash
+# XHash
 
 [![readme style standard](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-[![GitPOAP Badge](https://public-api.gitpoap.io/v1/repo/chfast/ethash/badge)](https://www.gitpoap.io/gh/chfast/ethash)
+[![GitPOAP Badge](https://public-api.gitpoap.io/v1/repo/chfast/xhash/badge)](https://www.gitpoap.io/gh/chfast/xhash)
 
-> C/C++ implementation of Ethash – the Ethereum Proof of Work algorithm
+> C/C++ implementation of XHash – the Ethereum Proof of Work algorithm
 
 
 ## Table of Contents
@@ -28,15 +28,15 @@ cmake --build .
 
 ## Usage
 
-See [ethash.hpp] for a list of exported functions and documentation.
+See [xhash.hpp] for a list of exported functions and documentation.
 
 
 ## Optimizations
 
 This section describes the optimizations, modifications and tweaks applied
-in this library in relation to [Ethash reference implementation].
+in this library in relation to [XHash reference implementation].
 
-The library contains a set of micro-benchmarks. Build and run the `ethash-bench`
+The library contains a set of micro-benchmarks. Build and run the `xhash-bench`
 tool.
 
 ### Seed hash is computed on the fly.
@@ -65,5 +65,5 @@ Licensed under the [Apache License, Version 2.0].
 
 [@chfast]: https://github.com/chfast
 [Apache License, Version 2.0]: LICENSE
-[ethash.hpp]: include/ethash/ethash.hpp
-[Ethash reference implementation]: https://github.com/ethereum/wiki/wiki/Ethash
+[xhash.hpp]: include/xhash/xhash.hpp
+[XHash reference implementation]: https://github.com/ethereum/wiki/wiki/XHash

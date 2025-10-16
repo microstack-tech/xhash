@@ -1,4 +1,4 @@
-# ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+# xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 # Copyright 2018 Pawel Bylica.
 # Licensed under the Apache License, Version 2.0.
 
@@ -10,16 +10,16 @@ include(CableCompilerSettings)
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 
-option(ETHASH_INSTALL_CMAKE_CONFIG "Install CMake configuration scripts for find_package(CONFIG)" ON)
-option(ETHASH_BUILD_ETHASH "Build ethash::ethash library (if NO only ethash::keccak is built)" YES)
-cmake_dependent_option(ETHASH_BUILD_GLOBAL_CONTEXT "Build ethash::global-context library" YES "ETHASH_BUILD_ETHASH" NO)
-option(ETHASH_TESTING "Build unit tests" NO)
+option(XHASH_INSTALL_CMAKE_CONFIG "Install CMake configuration scripts for find_package(CONFIG)" ON)
+option(XHASH_BUILD_XHASH "Build xhash::xhash library (if NO only xhash::keccak is built)" YES)
+cmake_dependent_option(XHASH_BUILD_GLOBAL_CONTEXT "Build xhash::global-context library" YES "XHASH_BUILD_XHASH" NO)
+option(XHASH_TESTING "Build unit tests" NO)
 
-if(ETHASH_TESTING)
+if(XHASH_TESTING)
     include(cmake/Hunter/init.cmake)
 endif()
 
-project(ethash)
+project(xhash)
 set(PROJECT_VERSION 1.1.0)
 
 cable_configure_compiler(NO_STACK_PROTECTION)
@@ -67,7 +67,7 @@ set(include_dir ${PROJECT_SOURCE_DIR}/include)
 
 add_subdirectory(lib)
 
-if(ETHASH_TESTING)
+if(XHASH_TESTING)
     enable_testing()
     add_subdirectory(test)
 endif()
@@ -79,19 +79,19 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-if(ETHASH_INSTALL_CMAKE_CONFIG)
-    write_basic_package_version_file(ethashConfigVersion.cmake COMPATIBILITY SameMajorVersion)
-    configure_package_config_file(cmake/Config.cmake.in ethashConfig.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ethash)
+if(XHASH_INSTALL_CMAKE_CONFIG)
+    write_basic_package_version_file(xhashConfigVersion.cmake COMPATIBILITY SameMajorVersion)
+    configure_package_config_file(cmake/Config.cmake.in xhashConfig.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xhash)
 
     install(
-        EXPORT ethashTargets
-        NAMESPACE ethash::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ethash
+        EXPORT xhashTargets
+        NAMESPACE xhash::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xhash
     )
     install(
         FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/ethashConfig.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/ethashConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ethash
+        ${CMAKE_CURRENT_BINARY_DIR}/xhashConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/xhashConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xhash
     )
 endif()

@@ -1,9 +1,9 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../support/attributes.h"
-#include <ethash/keccak.h>
+#include <xhash/keccak.h>
 
 #if !__has_builtin(__builtin_memcpy) && !defined(__GNUC__)
 #include <string.h>
@@ -353,30 +353,30 @@ static inline ALWAYS_INLINE void keccak(
         out[i] = to_le64(state[i]);
 }
 
-union ethash_hash256 ethash_keccak256(const uint8_t* data, size_t size)
+union xhash_hash256 xhash_keccak256(const uint8_t* data, size_t size)
 {
-    union ethash_hash256 hash;
+    union xhash_hash256 hash;
     keccak(hash.word64s, 256, data, size);
     return hash;
 }
 
-union ethash_hash256 ethash_keccak256_32(const uint8_t data[32])
+union xhash_hash256 xhash_keccak256_32(const uint8_t data[32])
 {
-    union ethash_hash256 hash;
+    union xhash_hash256 hash;
     keccak(hash.word64s, 256, data, 32);
     return hash;
 }
 
-union ethash_hash512 ethash_keccak512(const uint8_t* data, size_t size)
+union xhash_hash512 xhash_keccak512(const uint8_t* data, size_t size)
 {
-    union ethash_hash512 hash;
+    union xhash_hash512 hash;
     keccak(hash.word64s, 512, data, size);
     return hash;
 }
 
-union ethash_hash512 ethash_keccak512_64(const uint8_t data[64])
+union xhash_hash512 xhash_keccak512_64(const uint8_t data[64])
 {
-    union ethash_hash512 hash;
+    union xhash_hash512 hash;
     keccak(hash.word64s, 512, data, 64);
     return hash;
 }

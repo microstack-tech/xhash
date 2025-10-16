@@ -1,8 +1,8 @@
-# ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+# xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 # Copyright 2019 Pawel Bylica.
 # Licensed under the Apache License, Version 2.0.
 
-# The CFFI build script for ethash library.
+# The CFFI build script for xhash library.
 # It expects the library is installed in the dist/ directory.
 # The installation can be performed by
 #
@@ -20,49 +20,49 @@ if sys.platform == 'linux':
     stdlib.append('stdc++')
 
 ffibuilder.set_source(
-    "_ethash",
+    "_xhash",
     r"""
-    #include <ethash/keccak.h>
-    #include <ethash/ethash.h>
-    #include <ethash/global_context.h>
+    #include <xhash/keccak.h>
+    #include <xhash/xhash.h>
+    #include <xhash/global_context.h>
      """,
     include_dirs=['include'],
-    libraries=['ethash-global-context', 'ethash', 'keccak'] + stdlib,
+    libraries=['xhash-global-context', 'xhash', 'keccak'] + stdlib,
 )
 
 ffibuilder.cdef("""
 
-union ethash_hash256
+union xhash_hash256
 {
     ...;
     char str[32];
 };
 
-union ethash_hash512
+union xhash_hash512
 {
     ...;
     char str[64];
 };
 
-struct ethash_result
+struct xhash_result
 {
-    union ethash_hash256 final_hash;
-    union ethash_hash256 mix_hash;
+    union xhash_hash256 final_hash;
+    union xhash_hash256 mix_hash;
 };
 
 
-union ethash_hash256 ethash_keccak256(const uint8_t* data, size_t size);
+union xhash_hash256 xhash_keccak256(const uint8_t* data, size_t size);
 
-union ethash_hash512 ethash_keccak512(const uint8_t* data, size_t size);
+union xhash_hash512 xhash_keccak512(const uint8_t* data, size_t size);
 
-const struct ethash_epoch_context* ethash_get_global_epoch_context(int epoch_number);
+const struct xhash_epoch_context* xhash_get_global_epoch_context(int epoch_number);
 
-struct ethash_result ethash_hash(const struct ethash_epoch_context* context,
-    const union ethash_hash256* header_hash, uint64_t nonce);
+struct xhash_result xhash_hash(const struct xhash_epoch_context* context,
+    const union xhash_hash256* header_hash, uint64_t nonce);
     
-bool ethash_verify_against_boundary(const struct ethash_epoch_context* context,
-    const union ethash_hash256* header_hash, const union ethash_hash256* mix_hash, uint64_t nonce,
-    const union ethash_hash256* boundary);
+bool xhash_verify_against_boundary(const struct xhash_epoch_context* context,
+    const union xhash_hash256* header_hash, const union xhash_hash256* mix_hash, uint64_t nonce,
+    const union xhash_hash256* boundary);
 
 """)
 

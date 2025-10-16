@@ -1,4 +1,4 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
@@ -6,10 +6,10 @@
 #pragma warning(disable : 4127)
 #endif
 
-#include <ethash/endianness.hpp>
-#include <ethash/ethash-internal.hpp>
-#include <ethash/ethash.hpp>
-#include <ethash/keccak.hpp>
+#include <xhash/endianness.hpp>
+#include <xhash/xhash-internal.hpp>
+#include <xhash/xhash.hpp>
+#include <xhash/keccak.hpp>
 
 #include "../experimental/difficulty.h"
 #include "helpers.hpp"
@@ -20,7 +20,7 @@
 #include <array>
 #include <future>
 
-using namespace ethash;
+using namespace xhash;
 
 namespace
 {
@@ -39,7 +39,7 @@ epoch_context_ptr create_epoch_context_mock(int epoch_number)
 
     static const size_t context_alloc_size = std::max(sizeof(epoch_context), sizeof(hash512));
 
-    // The copy of ethash_create_epoch_context() but without light cache building:
+    // The copy of xhash_create_epoch_context() but without light cache building:
 
     const int light_cache_num_items = calculate_light_cache_num_items(epoch_number);
     const size_t light_cache_size = get_light_cache_size(light_cache_num_items);
@@ -55,7 +55,7 @@ epoch_context_ptr create_epoch_context_mock(int epoch_number)
         light_cache,
         calculate_full_dataset_num_items(epoch_number),
     };
-    return {context, ethash_destroy_epoch_context};
+    return {context, xhash_destroy_epoch_context};
 }
 
 hash512 copy(const hash512& h) noexcept
@@ -64,41 +64,41 @@ hash512 copy(const hash512& h) noexcept
 }
 }  // namespace
 
-TEST(ethash, revision)
+TEST(xhash, revision)
 {
-    static_assert(ethash::revision[0] == '2', "");
-    static_assert(ethash::revision[1] == '3', "");
-    EXPECT_EQ(ethash::revision, "23");
-    EXPECT_EQ(ethash::revision, (std::string{"23"}));
+    static_assert(xhash::revision[0] == '2', "");
+    static_assert(xhash::revision[1] == '3', "");
+    EXPECT_EQ(xhash::revision, "23");
+    EXPECT_EQ(xhash::revision, (std::string{"23"}));
 }
 
-TEST(ethash, error_code)
+TEST(xhash, error_code)
 {
     std::ostringstream os;
-    std::error_code ec = ETHASH_SUCCESS;
+    std::error_code ec = XHASH_SUCCESS;
     EXPECT_FALSE(ec);
     EXPECT_EQ(ec.message(), "");
 
-    ec = ETHASH_INVALID_FINAL_HASH;
+    ec = XHASH_INVALID_FINAL_HASH;
     EXPECT_TRUE(ec);
     EXPECT_EQ(ec.message(), "invalid final hash");
     os.str({});
     os << ec;
-    EXPECT_EQ(os.str(), "ethash:1");
+    EXPECT_EQ(os.str(), "xhash:1");
 
-    ec = ETHASH_INVALID_MIX_HASH;
+    ec = XHASH_INVALID_MIX_HASH;
     EXPECT_TRUE(ec);
     EXPECT_EQ(ec.message(), "invalid mix hash");
     os.str({});
     os << ec;
-    EXPECT_EQ(os.str(), "ethash:2");
+    EXPECT_EQ(os.str(), "xhash:2");
 
-    ec = static_cast<ethash_errc>(3);
+    ec = static_cast<xhash_errc>(3);
     EXPECT_TRUE(ec);
     EXPECT_EQ(ec.message(), "unknown error");
     os.str({});
     os << ec;
-    EXPECT_EQ(os.str(), "ethash:3");
+    EXPECT_EQ(os.str(), "xhash:3");
 }
 
 TEST(hash, hash256_from_bytes)
@@ -134,8 +134,8 @@ struct dataset_size_test_case
     uint64_t full_dataset_size;
 };
 
-/// Test cases for dataset sizes are random picked from generated ethash sizes.
-/// See https://github.com/ethereum/wiki/wiki/Ethash#data-sizes.
+/// Test cases for dataset sizes are random picked from generated xhash sizes.
+/// See https://github.com/ethereum/wiki/wiki/XHash#data-sizes.
 static dataset_size_test_case dataset_size_test_cases[] = {
     {0, 16776896, 1073739904},
     {14, 18611392, 1191180416},
@@ -196,7 +196,7 @@ static dataset_size_test_case dataset_size_test_cases[] = {
     {-1, 0, 0},
 };
 
-TEST(ethash, light_cache_size)
+TEST(xhash, light_cache_size)
 {
     for (const auto& t : dataset_size_test_cases)
     {
@@ -206,7 +206,7 @@ TEST(ethash, light_cache_size)
     }
 }
 
-TEST(ethash, full_dataset_size)
+TEST(xhash, full_dataset_size)
 {
     for (const auto& t : dataset_size_test_cases)
     {
@@ -234,7 +234,7 @@ constexpr epoch_seed_test_case epoch_seed_test_cases[] = {
     {max_epoch_number, "09b435f2d92d0ddee038c379be8db1f895c904282e9ceb790f519a6aa3f83810"},
 };
 
-TEST(ethash, calculate_epoch_seed)
+TEST(xhash, calculate_epoch_seed)
 {
     for (auto& t : epoch_seed_test_cases)
     {
@@ -244,7 +244,7 @@ TEST(ethash, calculate_epoch_seed)
 }
 
 
-TEST(ethash, find_epoch_number_double_ascending)
+TEST(xhash, find_epoch_number_double_ascending)
 {
     const hash256 seed_29998 = to_hash256(epoch_seed_test_cases[4].epoch_seed_hex);
     const hash256 seed_29999 = to_hash256(epoch_seed_test_cases[5].epoch_seed_hex);
@@ -257,7 +257,7 @@ TEST(ethash, find_epoch_number_double_ascending)
     EXPECT_EQ(epoch, 29999);
 }
 
-TEST(ethash, find_epoch_number_double_descending)
+TEST(xhash, find_epoch_number_double_descending)
 {
     const hash256 seed_29998 = to_hash256(epoch_seed_test_cases[4].epoch_seed_hex);
     const hash256 seed_29999 = to_hash256(epoch_seed_test_cases[5].epoch_seed_hex);
@@ -270,7 +270,7 @@ TEST(ethash, find_epoch_number_double_descending)
     EXPECT_EQ(epoch, 29998);
 }
 
-TEST(ethash, find_epoch_number_sequential)
+TEST(xhash, find_epoch_number_sequential)
 {
     hash256 seed = {};
     for (int i = 0; i <= max_epoch_number; ++i)
@@ -281,7 +281,7 @@ TEST(ethash, find_epoch_number_sequential)
     }
 }
 
-TEST(ethash, find_epoch_number_max)
+TEST(xhash, find_epoch_number_max)
 {
     const auto seed_max = to_hash256(epoch_seed_test_cases[7].epoch_seed_hex);
     const auto seed_out_of_range = keccak256(seed_max);
@@ -292,7 +292,7 @@ TEST(ethash, find_epoch_number_max)
     EXPECT_EQ(find_epoch_number(seed_max), max_epoch_number);
 }
 
-TEST(ethash, find_epoch_number_sequential_gap)
+TEST(xhash, find_epoch_number_sequential_gap)
 {
     constexpr int start_epoch = 200;
     hash256 seed = calculate_epoch_seed(start_epoch);
@@ -304,7 +304,7 @@ TEST(ethash, find_epoch_number_sequential_gap)
     }
 }
 
-TEST(ethash, find_epoch_number_descending)
+TEST(xhash, find_epoch_number_descending)
 {
     for (int i = 2050; i >= 2000; --i)
     {
@@ -321,7 +321,7 @@ TEST(ethash, find_epoch_number_descending)
     }
 }
 
-TEST(ethash, find_epoch_number_invalid)
+TEST(xhash, find_epoch_number_invalid)
 {
     hash256 fake_seed = {};
     fake_seed.word32s[0] = 1;
@@ -329,14 +329,14 @@ TEST(ethash, find_epoch_number_invalid)
     EXPECT_EQ(epoch, -1);
 }
 
-TEST(ethash, find_epoch_number_epoch_too_high)
+TEST(xhash, find_epoch_number_epoch_too_high)
 {
     hash256 seed = calculate_epoch_seed(max_epoch_number + 1);
     int epoch = find_epoch_number(seed);
     EXPECT_EQ(epoch, -1);
 }
 
-TEST(ethash_multithreaded, find_epoch_number_sequential)
+TEST(xhash_multithreaded, find_epoch_number_sequential)
 {
     auto fn = [] {
         hash256 seed = {};
@@ -355,7 +355,7 @@ TEST(ethash_multithreaded, find_epoch_number_sequential)
         f.wait();
 }
 
-TEST(ethash, get_epoch_number)
+TEST(xhash, get_epoch_number)
 {
     EXPECT_EQ(get_epoch_number(0), 0);
     EXPECT_EQ(get_epoch_number(1), 0);
@@ -369,7 +369,7 @@ TEST(ethash, get_epoch_number)
     EXPECT_EQ(get_epoch_number(max_block), max_epoch_number);
 }
 
-TEST(ethash, light_cache)
+TEST(xhash, light_cache)
 {
     struct light_cache_test_case
     {
@@ -394,13 +394,13 @@ TEST(ethash, light_cache)
     }
 }
 
-TEST(ethash, create_context_invalid_epoch)
+TEST(xhash, create_context_invalid_epoch)
 {
     EXPECT_EQ(create_epoch_context(-1), nullptr);
     EXPECT_EQ(create_epoch_context(max_epoch_number + 1), nullptr);
 }
 
-TEST(ethash, fake_dataset_partial_items)
+TEST(xhash, fake_dataset_partial_items)
 {
     struct full_dataset_item_test_case
     {
@@ -440,7 +440,7 @@ TEST(ethash, fake_dataset_partial_items)
     }
 }
 
-TEST(ethash, fake_dataset_items)
+TEST(xhash, fake_dataset_items)
 {
     struct full_dataset_item_test_case
     {
@@ -508,7 +508,7 @@ TEST(ethash, fake_dataset_items)
 }
 
 
-TEST(ethash, dataset_items_epoch13)
+TEST(xhash, dataset_items_epoch13)
 {
     struct full_dataset_item_test_case
     {
@@ -576,12 +576,12 @@ TEST(ethash, dataset_items_epoch13)
     }
 }
 
-TEST(ethash, verify_hash_light)
+TEST(xhash, verify_hash_light)
 {
     const hash256 zero{};
     const hash256 one = inc(zero);
 
-    epoch_context_ptr context{nullptr, ethash_destroy_epoch_context};
+    epoch_context_ptr context{nullptr, xhash_destroy_epoch_context};
 
     for (const auto& t : hash_test_cases)
     {
@@ -590,7 +590,7 @@ TEST(ethash, verify_hash_light)
         const hash256 header_hash = to_hash256(t.header_hash_hex);
         const hash256 mix_hash = to_hash256(t.mix_hash_hex);
         const hash256 boundary = to_hash256(t.final_hash_hex);
-        const hash256 difficulty = ethash_difficulty_to_boundary(&boundary);
+        const hash256 difficulty = xhash_difficulty_to_boundary(&boundary);
 
         if (!context || context->epoch_number != epoch_number)
             context = create_epoch_context(epoch_number);
@@ -600,63 +600,63 @@ TEST(ethash, verify_hash_light)
         EXPECT_EQ(to_hex(r.mix_hash), t.mix_hash_hex);
 
         auto ec = verify_final_hash_against_difficulty(header_hash, mix_hash, nonce, difficulty);
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
         EXPECT_FALSE(ec);
-        EXPECT_EQ(ec.category(), ethash_category());
+        EXPECT_EQ(ec.category(), xhash_category());
 
         ec = verify_final_hash_against_difficulty(header_hash, mix_hash, nonce, inc(difficulty));
-        EXPECT_EQ(ec, ETHASH_INVALID_FINAL_HASH);
+        EXPECT_EQ(ec, XHASH_INVALID_FINAL_HASH);
 
         ec = verify_against_boundary(*context, header_hash, mix_hash, nonce, boundary);
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
 
         ec = verify_against_boundary(*context, header_hash, mix_hash, nonce, dec(boundary));
-        EXPECT_EQ(ec, ETHASH_INVALID_FINAL_HASH);
+        EXPECT_EQ(ec, XHASH_INVALID_FINAL_HASH);
 
         ec = verify_against_boundary(*context, header_hash, mix_hash, nonce, inc(boundary));
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
 
         ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce, difficulty);
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
 
         ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce, dec(difficulty));
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
 
         ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce, inc(difficulty));
-        EXPECT_EQ(ec, ETHASH_INVALID_FINAL_HASH);
+        EXPECT_EQ(ec, XHASH_INVALID_FINAL_HASH);
 
         ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce, zero);
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
 
         ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce, one);
-        EXPECT_EQ(ec, ETHASH_SUCCESS);
+        EXPECT_EQ(ec, XHASH_SUCCESS);
 
         const bool within_significant_boundary = r.final_hash.bytes[0] == 0;
         if (within_significant_boundary)
         {
             ec = verify_final_hash_against_difficulty(header_hash, mix_hash, nonce + 1, difficulty);
-            EXPECT_EQ(ec, ETHASH_INVALID_FINAL_HASH);
+            EXPECT_EQ(ec, XHASH_INVALID_FINAL_HASH);
 
             ec = verify_against_boundary(*context, header_hash, mix_hash, nonce + 1, boundary);
-            EXPECT_EQ(ec, ETHASH_INVALID_FINAL_HASH);
+            EXPECT_EQ(ec, XHASH_INVALID_FINAL_HASH);
 
             ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce + 1, difficulty);
-            EXPECT_EQ(ec, ETHASH_INVALID_FINAL_HASH);
+            EXPECT_EQ(ec, XHASH_INVALID_FINAL_HASH);
         }
         else
         {
             ec = verify_against_boundary(*context, header_hash, mix_hash, nonce + 1, boundary);
-            EXPECT_EQ(ec, ETHASH_INVALID_MIX_HASH);
+            EXPECT_EQ(ec, XHASH_INVALID_MIX_HASH);
 
             ec = verify_against_difficulty(*context, header_hash, mix_hash, nonce + 1, difficulty);
-            EXPECT_EQ(ec, ETHASH_INVALID_MIX_HASH);
+            EXPECT_EQ(ec, XHASH_INVALID_MIX_HASH);
         }
     }
 }
 
-TEST(ethash, verify_hash)
+TEST(xhash, verify_hash)
 {
-    epoch_context_full_ptr context{nullptr, ethash_destroy_epoch_context_full};
+    epoch_context_full_ptr context{nullptr, xhash_destroy_epoch_context_full};
 
     for (const auto& t : hash_test_cases)
     {
@@ -687,9 +687,9 @@ TEST(ethash, verify_hash)
     }
 }
 
-TEST(ethash, verify_final_hash_only)
+TEST(xhash, verify_final_hash_only)
 {
-    auto& context = get_ethash_epoch_context_0();
+    auto& context = get_xhash_epoch_context_0();
     const hash256 header_hash = {};
     const hash256 mix_hash = {};
     uint64_t nonce = 3221208;
@@ -697,14 +697,14 @@ TEST(ethash, verify_final_hash_only)
         to_hash256("00000000000000000000000000000000000000000000000000000000012853fe");
 
     EXPECT_EQ(verify_final_hash_against_difficulty(header_hash, mix_hash, nonce, difficulty),
-        ETHASH_SUCCESS);
+        XHASH_SUCCESS);
     EXPECT_EQ(verify_against_difficulty(context, header_hash, mix_hash, nonce, difficulty),
-        ETHASH_INVALID_MIX_HASH);
+        XHASH_INVALID_MIX_HASH);
 }
 
-TEST(ethash, verify_boundary)
+TEST(xhash, verify_boundary)
 {
-    const auto& context = get_ethash_epoch_context_0();
+    const auto& context = get_xhash_epoch_context_0();
     const hash256 example_header_hash =
         to_hash256("e74e5e8688d3c6f17885fa5e64eb6718046b57895a2a24c593593070ab71f5fd");
     const uint64_t nonce = 6666;
@@ -724,14 +724,14 @@ TEST(ethash, verify_boundary)
     EXPECT_EQ(to_hex(r.final_hash), to_hex(boundary_eq));
 
     EXPECT_EQ(verify_against_boundary(context, example_header_hash, r.mix_hash, nonce, boundary_eq),
-        ETHASH_SUCCESS);
+        XHASH_SUCCESS);
     EXPECT_EQ(verify_against_boundary(context, example_header_hash, r.mix_hash, nonce, boundary_gt),
-        ETHASH_SUCCESS);
+        XHASH_SUCCESS);
     EXPECT_EQ(verify_against_boundary(context, example_header_hash, r.mix_hash, nonce, boundary_lt),
-        ETHASH_INVALID_FINAL_HASH);
+        XHASH_INVALID_FINAL_HASH);
 }
 
-TEST(ethash_multithreaded, small_dataset)
+TEST(xhash_multithreaded, small_dataset)
 {
     // This test creates a tiny dataset for full search to discover sync issues between threads.
 
@@ -758,7 +758,7 @@ TEST(ethash_multithreaded, small_dataset)
         EXPECT_EQ(f.get().nonce, 38444);
 }
 
-TEST(ethash, small_dataset)
+TEST(xhash, small_dataset)
 {
     constexpr int num_dataset_items = 501;
     const hash256 boundary =
@@ -847,7 +847,7 @@ bool restore_memory_limit()
 
 static constexpr bool arch64bit = sizeof(void*) == 8;
 
-TEST(ethash, create_context_oom)
+TEST(xhash, create_context_oom)
 {
     static constexpr int epoch = arch64bit ? 3000 : 300;
     static constexpr size_t expected_size = arch64bit ? 26239565696 : 3590324096;
@@ -858,7 +858,7 @@ TEST(ethash, create_context_oom)
     ASSERT_EQ(size, expected_size);
 
     ASSERT_TRUE(set_memory_limit(1024 * 1024 * 1024));
-    auto* context = ethash_create_epoch_context_full(epoch);
+    auto* context = xhash_create_epoch_context_full(epoch);
     ASSERT_TRUE(restore_memory_limit());
     EXPECT_EQ(context, nullptr);
 }
@@ -919,7 +919,7 @@ less_equal_test_case less_equal_test_cases[] = {
 };
 }  // namespace
 
-TEST(ethash, less_equal)
+TEST(xhash, less_equal)
 {
     for (const auto& t : less_equal_test_cases)
     {
@@ -929,7 +929,7 @@ TEST(ethash, less_equal)
     }
 }
 
-TEST(ethash, inc)
+TEST(xhash, inc)
 {
     const auto t = [](const char* s) { return to_hex(inc(to_hash256(s))); };
 
@@ -949,7 +949,7 @@ TEST(ethash, inc)
         "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 }
 
-TEST(ethash, dec)
+TEST(xhash, dec)
 {
     const auto t = [](const char* s) { return to_hex(dec(to_hash256(s))); };
 
