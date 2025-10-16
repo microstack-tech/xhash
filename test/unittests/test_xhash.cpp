@@ -363,7 +363,7 @@ TEST(xhash, get_epoch_number)
     EXPECT_EQ(get_epoch_number(720), 1);
     EXPECT_EQ(get_epoch_number(721), 1);
     EXPECT_EQ(get_epoch_number(722), 1);
-    EXPECT_EQ(get_epoch_number(112000), 166);
+    EXPECT_EQ(get_epoch_number(120000), 166);
     EXPECT_EQ(get_epoch_number(max_epoch_number * epoch_length), max_epoch_number);
     constexpr auto max_block = max_epoch_number * epoch_length + epoch_length - 1;
     EXPECT_EQ(get_epoch_number(max_block), max_epoch_number);
