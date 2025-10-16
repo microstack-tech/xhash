@@ -32,13 +32,14 @@ static inline uint64_t rol(uint64_t x, unsigned s)
     return (x << s) | (x >> (64 - s));
 }
 
-static const uint64_t round_constants[24] = {0x0000000000000001ULL, 0x0000000000008082ULL,
-    0x800000000000808aULL, 0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
-    0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL, 0x0000000000000088ULL,
-    0x0000000080008009ULL, 0x000000008000000aULL, 0x000000008000808bULL, 0x800000000000008bULL,
-    0x8000000000008089ULL, 0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
-    0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL, 0x8000000000008080ULL,
-    0x0000000080000001ULL, 0x8000000080008008ULL};
+static const uint64_t round_constants[24] = {  //
+    0x0000000000000001, 0x0000000000008082, 0x800000000000808a, 0x8000000080008000,
+    0x000000000000808b, 0x0000000080000001, 0x8000000080008081, 0x8000000000008009,
+    0x000000000000008a, 0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+    0x000000008000808b, 0x800000000000008b, 0x8000000000008089, 0x8000000000008003,
+    0x8000000000008002, 0x8000000000000080, 0x000000000000800a, 0x800000008000000a,
+    0x8000000080008081, 0x8000000000008080, 0x0000000080000001, 0x8000000080008008};
+
 
 /// Keccak-f[1600] permutation core.
 static inline ALWAYS_INLINE void keccakf1600_implementation(uint64_t state[25])
@@ -56,6 +57,7 @@ static inline ALWAYS_INLINE void keccakf1600_implementation(uint64_t state[25])
     uint64_t Esa, Ese, Esi, Eso, Esu;
 
     uint64_t Ba, Be, Bi, Bo, Bu;
+
     uint64_t Da, De, Di, Do, Du;
 
     Aba = state[0];
@@ -87,6 +89,7 @@ static inline ALWAYS_INLINE void keccakf1600_implementation(uint64_t state[25])
     for (size_t n = 0; n < 24; n += 2)
     {
         // Round (n + 0): Axx -> Exx
+
         Ba = Aba ^ Aga ^ Aka ^ Ama ^ Asa;
         Be = Abe ^ Age ^ Ake ^ Ame ^ Ase;
         Bi = Abi ^ Agi ^ Aki ^ Ami ^ Asi;
@@ -154,7 +157,9 @@ static inline ALWAYS_INLINE void keccakf1600_implementation(uint64_t state[25])
         Eso = Bo ^ (~Bu & Ba);
         Esu = Bu ^ (~Ba & Be);
 
+
         // Round (n + 1): Exx -> Axx
+
         Ba = Eba ^ Ega ^ Eka ^ Ema ^ Esa;
         Be = Ebe ^ Ege ^ Eke ^ Eme ^ Ese;
         Bi = Ebi ^ Egi ^ Eki ^ Emi ^ Esi;
@@ -182,7 +187,7 @@ static inline ALWAYS_INLINE void keccakf1600_implementation(uint64_t state[25])
         Be = rol(Egu ^ Du, 20);
         Bi = rol(Eka ^ Da, 3);
         Bo = rol(Eme ^ De, 45);
-        Bu = rol(Eso ^ Di, 61);
+        Bu = rol(Esi ^ Di, 61);
         Aga = Ba ^ (~Be & Bi);
         Age = Be ^ (~Bi & Bo);
         Agi = Bi ^ (~Bo & Bu);
@@ -278,7 +283,7 @@ static inline ALWAYS_INLINE void sha3_digest(
 {
     static const size_t word_size = sizeof(uint64_t);
     const size_t hash_size = bits / 8;
-    const size_t block_size = (1600 - bits * 2) / 8;  // rate in bytes
+    const size_t block_size = (1600 - bits * 2) / 8;
 
     size_t i;
     uint64_t* state_iter;
@@ -287,7 +292,6 @@ static inline ALWAYS_INLINE void sha3_digest(
 
     uint64_t state[25] = {0};
 
-    // Absorb full-rate blocks
     while (size >= block_size)
     {
         for (i = 0; i < (block_size / word_size); ++i)
@@ -295,12 +299,14 @@ static inline ALWAYS_INLINE void sha3_digest(
             state[i] ^= load_le(data);
             data += word_size;
         }
+
         keccakf1600_best(state);
+
         size -= block_size;
     }
 
-    // Absorb remaining bytes into lanes
     state_iter = state;
+
     while (size >= word_size)
     {
         *state_iter ^= load_le(data);
@@ -316,18 +322,13 @@ static inline ALWAYS_INLINE void sha3_digest(
         ++data;
         --size;
     }
+    *last_word_iter = 0x06;
+    *state_iter ^= to_le64(last_word);
 
-    // --- SHA-3 domain suffix 0x06 (NOT 0x01) ---
-    *last_word_iter = 0x06;             // domain separation
-    *state_iter ^= to_le64(last_word);  // xor domain into current lane
+    state[(block_size / word_size) - 1] ^= 0x8000000000000000;
 
-    // Multi-rate padding: set the MSB of the last byte of the block.
-    state[(block_size / word_size) - 1] ^= 0x8000000000000000ULL;
-
-    // Permute
     keccakf1600_best(state);
 
-    // Squeeze first 'bits' as the digest (one block is enough for SHA3-256/512)
     for (i = 0; i < (hash_size / word_size); ++i)
         out[i] = to_le64(state[i]);
 }
