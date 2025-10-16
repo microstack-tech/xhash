@@ -1,14 +1,14 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-#include <ethash/keccak.hpp>
+#include <xhash/keccak.hpp>
 
 #include "helpers.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace ethash;
+using namespace xhash;
 
 struct keccak_test_case
 {
@@ -243,8 +243,8 @@ TEST(keccak, hpp_aliases)
 {
     uint8_t data[64] = {42};
 
-    EXPECT_EQ(keccak256_32(data).word64s[1], ethash_keccak256_32(data).word64s[1]);
-    EXPECT_EQ(keccak512_64(data).word64s[1], ethash_keccak512_64(data).word64s[1]);
+    EXPECT_EQ(keccak256_32(data).word64s[1], xhash_keccak256_32(data).word64s[1]);
+    EXPECT_EQ(keccak512_64(data).word64s[1], xhash_keccak512_64(data).word64s[1]);
 }
 
 TEST(helpers, to_hex)

@@ -1,9 +1,9 @@
-# ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+# xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 # Copyright 2019 Pawel Bylica.
 # Copyright 2023 Sam Wilson.
 # Licensed under the Apache License, Version 2.0.
 
-from _ethash import ffi, lib  # type: ignore
+from _xhash import ffi, lib  # type: ignore
 
 from typing import TYPE_CHECKING, Tuple
 
@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 
 
 def keccak_256(data: "SizedReadableBuffer") -> bytes:
-    h = lib.ethash_keccak256(ffi.from_buffer(data), len(data))
+    h = lib.xhash_keccak256(ffi.from_buffer(data), len(data))
     return ffi.unpack(h.str, len(h.str))
 
 
 def keccak_512(data: "SizedReadableBuffer") -> bytes:
-    h = lib.ethash_keccak512(ffi.from_buffer(data), len(data))
+    h = lib.xhash_keccak512(ffi.from_buffer(data), len(data))
     return ffi.unpack(h.str, len(h.str))
 
 
@@ -34,10 +34,10 @@ def hash(
     if len(header_hash) != 32:
         raise ValueError('header_hash must have length of 32')
 
-    ctx = lib.ethash_get_global_epoch_context(epoch_number)
-    c_header_hash = ffi.new('union ethash_hash256*')
+    ctx = lib.xhash_get_global_epoch_context(epoch_number)
+    c_header_hash = ffi.new('union xhash_hash256*')
     c_header_hash[0].str = header_hash
-    result = lib.ethash_hash(ctx, c_header_hash, nonce)
+    result = lib.xhash_hash(ctx, c_header_hash, nonce)
     final_hash = ffi.unpack(result.final_hash.str, len(result.final_hash.str))
     mix_hash = ffi.unpack(result.mix_hash.str, len(result.mix_hash.str))
     return final_hash, mix_hash
@@ -57,13 +57,13 @@ def verify(
     if len(boundary) != 32:
         raise ValueError('boundary must have length of 32')
 
-    ctx = lib.ethash_get_global_epoch_context(epoch_number)
-    c_header_hash = ffi.new('union ethash_hash256*')
+    ctx = lib.xhash_get_global_epoch_context(epoch_number)
+    c_header_hash = ffi.new('union xhash_hash256*')
     c_header_hash[0].str = header_hash
-    c_mix_hash = ffi.new('union ethash_hash256*')
+    c_mix_hash = ffi.new('union xhash_hash256*')
     c_mix_hash[0].str = mix_hash
-    c_boundary = ffi.new('union ethash_hash256*')
+    c_boundary = ffi.new('union xhash_hash256*')
     c_boundary[0].str = boundary
 
-    ec = lib.ethash_verify_against_boundary(ctx, c_header_hash, c_mix_hash, nonce, c_boundary)
+    ec = lib.xhash_verify_against_boundary(ctx, c_header_hash, c_mix_hash, nonce, c_boundary)
     return ec == 0

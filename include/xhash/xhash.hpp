@@ -1,4 +1,4 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018-2019 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
@@ -7,15 +7,15 @@
 /// API design decisions:
 ///
 /// 1. Signed integer type is used whenever the size of the type is not
-///    restricted by the Ethash specification.
+///    restricted by the XHash specification.
 ///    See http://www.aristeia.com/Papers/C++ReportColumns/sep95.pdf.
 ///    See https://stackoverflow.com/questions/10168079/why-is-size-t-unsigned/.
 ///    See https://github.com/Microsoft/GSL/issues/171.
 
 #pragma once
 
-#include <ethash/ethash.h>
-#include <ethash/hash_types.hpp>
+#include <xhash/xhash.h>
+#include <xhash/hash_types.hpp>
 
 #include <cstdint>
 #include <cstring>
@@ -25,30 +25,30 @@
 
 namespace std
 {
-/// Template specialization of std::is_error_code_enum for ethash_errc.
+/// Template specialization of std::is_error_code_enum for xhash_errc.
 /// This enabled implicit conversions from evmc::hex_errc to std::error_code.
 template <>
-struct is_error_code_enum<ethash_errc> : true_type
+struct is_error_code_enum<xhash_errc> : true_type
 {
 };
 }  // namespace std
 
 
-namespace ethash
+namespace xhash
 {
-constexpr auto revision = ETHASH_REVISION;
+constexpr auto revision = XHASH_REVISION;
 
-constexpr int epoch_length = ETHASH_EPOCH_LENGTH;
-constexpr int light_cache_item_size = ETHASH_LIGHT_CACHE_ITEM_SIZE;
-constexpr int full_dataset_item_size = ETHASH_FULL_DATASET_ITEM_SIZE;
-constexpr int num_dataset_accesses = ETHASH_NUM_DATASET_ACCESSES;
+constexpr int epoch_length = XHASH_EPOCH_LENGTH;
+constexpr int light_cache_item_size = XHASH_LIGHT_CACHE_ITEM_SIZE;
+constexpr int full_dataset_item_size = XHASH_FULL_DATASET_ITEM_SIZE;
+constexpr int num_dataset_accesses = XHASH_NUM_DATASET_ACCESSES;
 
-constexpr int max_epoch_number = ETHASH_MAX_EPOCH_NUMBER;
+constexpr int max_epoch_number = XHASH_MAX_EPOCH_NUMBER;
 
-using epoch_context = ethash_epoch_context;
-using epoch_context_full = ethash_epoch_context_full;
+using epoch_context = xhash_epoch_context;
+using epoch_context_full = xhash_epoch_context_full;
 
-using result = ethash_result;
+using result = xhash_result;
 
 /// Constructs a 256-bit hash from an array of bytes.
 ///
@@ -76,14 +76,14 @@ struct search_result
 };
 
 
-/// Alias for ethash_calculate_light_cache_num_items().
-static constexpr auto calculate_light_cache_num_items = ethash_calculate_light_cache_num_items;
+/// Alias for xhash_calculate_light_cache_num_items().
+static constexpr auto calculate_light_cache_num_items = xhash_calculate_light_cache_num_items;
 
-/// Alias for ethash_calculate_full_dataset_num_items().
-static constexpr auto calculate_full_dataset_num_items = ethash_calculate_full_dataset_num_items;
+/// Alias for xhash_calculate_full_dataset_num_items().
+static constexpr auto calculate_full_dataset_num_items = xhash_calculate_full_dataset_num_items;
 
-/// Alias for ethash_calculate_epoch_seed().
-static constexpr auto calculate_epoch_seed = ethash_calculate_epoch_seed;
+/// Alias for xhash_calculate_epoch_seed().
+static constexpr auto calculate_epoch_seed = xhash_calculate_epoch_seed;
 
 
 /// Calculates the epoch number out of the block number.
@@ -115,30 +115,30 @@ inline constexpr uint64_t get_full_dataset_size(int num_items) noexcept
 }
 
 /// Owned unique pointer to an epoch context.
-using epoch_context_ptr = std::unique_ptr<epoch_context, decltype(&ethash_destroy_epoch_context)>;
+using epoch_context_ptr = std::unique_ptr<epoch_context, decltype(&xhash_destroy_epoch_context)>;
 
 using epoch_context_full_ptr =
-    std::unique_ptr<epoch_context_full, decltype(&ethash_destroy_epoch_context_full)>;
+    std::unique_ptr<epoch_context_full, decltype(&xhash_destroy_epoch_context_full)>;
 
-/// Creates Ethash epoch context.
+/// Creates XHash epoch context.
 ///
-/// This is a wrapper for ethash_create_epoch_number C function that returns
+/// This is a wrapper for xhash_create_epoch_number C function that returns
 /// the context as a smart pointer which handles the destruction of the context.
 inline epoch_context_ptr create_epoch_context(int epoch_number) noexcept
 {
-    return {ethash_create_epoch_context(epoch_number), ethash_destroy_epoch_context};
+    return {xhash_create_epoch_context(epoch_number), xhash_destroy_epoch_context};
 }
 
 inline epoch_context_full_ptr create_epoch_context_full(int epoch_number) noexcept
 {
-    return {ethash_create_epoch_context_full(epoch_number), ethash_destroy_epoch_context_full};
+    return {xhash_create_epoch_context_full(epoch_number), xhash_destroy_epoch_context_full};
 }
 
 
 inline result hash(
     const epoch_context& context, const hash256& header_hash, uint64_t nonce) noexcept
 {
-    return ethash_hash(&context, &header_hash, nonce);
+    return xhash_hash(&context, &header_hash, nonce);
 }
 
 result hash(const epoch_context_full& context, const hash256& header_hash, uint64_t nonce) noexcept;
@@ -146,28 +146,28 @@ result hash(const epoch_context_full& context, const hash256& header_hash, uint6
 inline std::error_code verify_final_hash_against_difficulty(const hash256& header_hash,
     const hash256& mix_hash, uint64_t nonce, const hash256& difficulty) noexcept
 {
-    return ethash_verify_final_hash_against_difficulty(&header_hash, &mix_hash, nonce, &difficulty);
+    return xhash_verify_final_hash_against_difficulty(&header_hash, &mix_hash, nonce, &difficulty);
 }
 
 inline std::error_code verify_against_difficulty(const epoch_context& context,
     const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
     const hash256& difficulty) noexcept
 {
-    return ethash_verify_against_difficulty(&context, &header_hash, &mix_hash, nonce, &difficulty);
+    return xhash_verify_against_difficulty(&context, &header_hash, &mix_hash, nonce, &difficulty);
 }
 
 inline std::error_code verify_against_boundary(const epoch_context& context,
     const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
     const hash256& boundary) noexcept
 {
-    return ethash_verify_against_boundary(&context, &header_hash, &mix_hash, nonce, &boundary);
+    return xhash_verify_against_boundary(&context, &header_hash, &mix_hash, nonce, &boundary);
 }
 
 [[deprecated("use verify_against_boundary()")]] inline std::error_code verify(
     const epoch_context& context, const hash256& header_hash, const hash256& mix_hash,
     uint64_t nonce, const hash256& boundary) noexcept
 {
-    return ethash_verify_against_boundary(&context, &header_hash, &mix_hash, nonce, &boundary);
+    return xhash_verify_against_boundary(&context, &header_hash, &mix_hash, nonce, &boundary);
 }
 
 search_result search_light(const epoch_context& context, const hash256& header_hash,
@@ -183,27 +183,27 @@ search_result search(const epoch_context_full& context, const hash256& header_ha
 /// seed hash instead of epoch number to workers. This function tries to recover
 /// the epoch number from this seed hash.
 ///
-/// @param seed  Ethash seed hash.
+/// @param seed  XHash seed hash.
 /// @return      The epoch number or -1 if not found.
 int find_epoch_number(const hash256& seed) noexcept;
 
 
-/// Obtains a reference to the static error category object for ethash errors.
-inline const std::error_category& ethash_category() noexcept
+/// Obtains a reference to the static error category object for xhash errors.
+inline const std::error_category& xhash_category() noexcept
 {
-    struct ethash_category_impl : std::error_category
+    struct xhash_category_impl : std::error_category
     {
-        const char* name() const noexcept final { return "ethash"; }
+        const char* name() const noexcept final { return "xhash"; }
 
         std::string message(int ev) const final
         {
             switch (ev)
             {
-            case ETHASH_SUCCESS:
+            case XHASH_SUCCESS:
                 return "";
-            case ETHASH_INVALID_FINAL_HASH:
+            case XHASH_INVALID_FINAL_HASH:
                 return "invalid final hash";
-            case ETHASH_INVALID_MIX_HASH:
+            case XHASH_INVALID_MIX_HASH:
                 return "invalid mix hash";
             default:
                 return "unknown error";
@@ -211,16 +211,16 @@ inline const std::error_category& ethash_category() noexcept
         }
     };
 
-    static ethash_category_impl category_instance;
+    static xhash_category_impl category_instance;
     return category_instance;
 }
-}  // namespace ethash
+}  // namespace xhash
 
 
-/// Creates error_code object out of an Ethash error code value.
-/// This is used by std::error_code to implement implicit conversion ethash_errc -> std::error_code,
-/// therefore the definition is in the global namespace to match the definition of ethash_errc.
-inline std::error_code make_error_code(ethash_errc errc) noexcept
+/// Creates error_code object out of an XHash error code value.
+/// This is used by std::error_code to implement implicit conversion xhash_errc -> std::error_code,
+/// therefore the definition is in the global namespace to match the definition of xhash_errc.
+inline std::error_code make_error_code(xhash_errc errc) noexcept
 {
-    return {errc, ethash::ethash_category()};
+    return {errc, xhash::xhash_category()};
 }

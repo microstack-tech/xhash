@@ -1,9 +1,9 @@
 // xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
-// Copyright 2018 Pawel Bylica.
+// NIST SHA-3 (Keccak-f[1600] sponge with domain 0x06)
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../support/attributes.h"
-#include <xhash/keccak.h>
+#include <xhash/sha3.h>
 
 #if !__has_builtin(__builtin_memcpy) && !defined(__GNUC__)
 #include <string.h>
@@ -20,17 +20,13 @@
 static inline ALWAYS_INLINE uint64_t load_le(const uint8_t* data)
 {
     /* memcpy is the best way of expressing the intention. Every compiler will
-       optimize is to single load instruction if the target architecture
-       supports unaligned memory access (GCC and clang even in O0).
-       This is great trick because we are violating C/C++ memory alignment
-       restrictions with no performance penalty. */
+       optimize it to a single load if the arch supports unaligned access. */
     uint64_t word;
     __builtin_memcpy(&word, data, sizeof(word));
     return to_le64(word);
 }
 
-/// Rotates the bits of x left by the count value specified by s.
-/// The s must be in range <0, 64> exclusively, otherwise the result is undefined.
+/// Rotates the bits of x left by s (0 < s < 64).
 static inline uint64_t rol(uint64_t x, unsigned s)
 {
     return (x << s) | (x >> (64 - s));
@@ -45,16 +41,7 @@ static const uint64_t round_constants[24] = {  //
     0x8000000080008081, 0x8000000000008080, 0x0000000080000001, 0x8000000080008008};
 
 
-/// The Keccak-f[1600] function.
-///
-/// The implementation of the Keccak-f function with 1600-bit width of the permutation (b).
-/// The size of the state is also 1600 bit what gives 25 64-bit words.
-///
-/// @param state  The state of 25 64-bit words on which the permutation is to be performed.
-///
-/// The implementation based on:
-/// - "simple" implementation by Ronny Van Keer, included in "Reference and optimized code in C",
-///   https://keccak.team/archives.html, CC0-1.0 / Public Domain.
+/// Keccak-f[1600] permutation core.
 static inline ALWAYS_INLINE void keccakf1600_implementation(uint64_t state[25])
 {
     uint64_t Aba, Abe, Abi, Abo, Abu;
@@ -273,10 +260,8 @@ static void keccakf1600_generic(uint64_t state[25])
     keccakf1600_implementation(state);
 }
 
-/// The pointer to the best Keccak-f[1600] function implementation,
-/// selected during runtime initialization.
+/// Pointer to best implementation (runtime-selected).
 static void (*keccakf1600_best)(uint64_t[25]) = keccakf1600_generic;
-
 
 #if !defined(_MSC_VER) && defined(__x86_64__) && __has_attribute(target)
 __attribute__((target("bmi,bmi2"))) static void keccakf1600_bmi(uint64_t state[25])
@@ -286,19 +271,14 @@ __attribute__((target("bmi,bmi2"))) static void keccakf1600_bmi(uint64_t state[2
 
 __attribute__((constructor)) static void select_keccakf1600_implementation(void)
 {
-    // Init CPU information.
-    // This is needed on macOS because of the bug: https://bugs.llvm.org/show_bug.cgi?id=48459.
     __builtin_cpu_init();
-
-    // Check if both BMI and BMI2 are supported. Some CPUs like Intel E5-2697 v2 incorrectly
-    // report BMI2 but not BMI being available.
     if (__builtin_cpu_supports("bmi") && __builtin_cpu_supports("bmi2"))
         keccakf1600_best = keccakf1600_bmi;
 }
 #endif
 
-
-static inline ALWAYS_INLINE void keccak(
+/// Sponge absorb+pad for SHA-3 domain 0x06, then squeeze first 'bits' output.
+static inline ALWAYS_INLINE void sha3_digest(
     uint64_t* out, size_t bits, const uint8_t* data, size_t size)
 {
     static const size_t word_size = sizeof(uint64_t);
@@ -342,7 +322,7 @@ static inline ALWAYS_INLINE void keccak(
         ++data;
         --size;
     }
-    *last_word_iter = 0x01;
+    *last_word_iter = 0x06;
     *state_iter ^= to_le64(last_word);
 
     state[(block_size / word_size) - 1] ^= 0x8000000000000000;
@@ -353,30 +333,30 @@ static inline ALWAYS_INLINE void keccak(
         out[i] = to_le64(state[i]);
 }
 
-union xhash_hash256 xhash_keccak256(const uint8_t* data, size_t size)
+union xhash_hash256 xhash_sha3_256(const uint8_t* data, size_t size)
 {
     union xhash_hash256 hash;
-    keccak(hash.word64s, 256, data, size);
+    sha3_digest(hash.word64s, 256, data, size);
     return hash;
 }
 
-union xhash_hash256 xhash_keccak256_32(const uint8_t data[32])
+union xhash_hash256 xhash_sha3_256_32(const uint8_t data[32])
 {
     union xhash_hash256 hash;
-    keccak(hash.word64s, 256, data, 32);
+    sha3_digest(hash.word64s, 256, data, 32);
     return hash;
 }
 
-union xhash_hash512 xhash_keccak512(const uint8_t* data, size_t size)
+union xhash_hash512 xhash_sha3_512(const uint8_t* data, size_t size)
 {
     union xhash_hash512 hash;
-    keccak(hash.word64s, 512, data, size);
+    sha3_digest(hash.word64s, 512, data, size);
     return hash;
 }
 
-union xhash_hash512 xhash_keccak512_64(const uint8_t data[64])
+union xhash_hash512 xhash_sha3_512_64(const uint8_t data[64])
 {
     union xhash_hash512 hash;
-    keccak(hash.word64s, 512, data, 64);
+    sha3_digest(hash.word64s, 512, data, 64);
     return hash;
 }

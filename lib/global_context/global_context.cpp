@@ -1,9 +1,9 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018-2019 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-#include "../ethash/ethash-internal.hpp"
-#include <ethash/global_context.h>
+#include "../xhash/xhash-internal.hpp"
+#include <xhash/global_context.h>
 
 #include <memory>
 #include <mutex>
@@ -20,7 +20,7 @@
 #define ATTRIBUTE_NOINLINE
 #endif
 
-using namespace ethash;
+using namespace xhash;
 
 namespace
 {
@@ -81,7 +81,7 @@ void update_local_context_full(int epoch_number)
 }
 }  // namespace
 
-const ethash_epoch_context* ethash_get_global_epoch_context(int epoch_number) noexcept
+const xhash_epoch_context* xhash_get_global_epoch_context(int epoch_number) noexcept
 {
     // Check if local context matches epoch number.
     if (!thread_local_context || thread_local_context->epoch_number != epoch_number)
@@ -90,7 +90,7 @@ const ethash_epoch_context* ethash_get_global_epoch_context(int epoch_number) no
     return thread_local_context.get();
 }
 
-const ethash_epoch_context_full* ethash_get_global_epoch_context_full(int epoch_number) noexcept
+const xhash_epoch_context_full* xhash_get_global_epoch_context_full(int epoch_number) noexcept
 {
     // Check if local context matches epoch number.
     if (!thread_local_context_full || thread_local_context_full->epoch_number != epoch_number)

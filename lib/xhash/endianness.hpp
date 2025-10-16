@@ -1,10 +1,10 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
 /// @file
 /// This file contains helper functions to handle big-endian architectures.
-/// The Ethash algorithm is naturally defined for little-endian architectures
+/// The XHash algorithm is naturally defined for little-endian architectures
 /// so for those the helpers are just no-op empty functions.
 /// For big-endian architectures we need 32-bit and 64-bit byte swapping in
 /// some places.
@@ -12,7 +12,7 @@
 #pragma once
 
 #include "../support/attributes.h"
-#include <ethash/ethash.hpp>
+#include <xhash/xhash.hpp>
 
 #ifndef __BYTE_ORDER__
 #if defined(_WIN32)  // On Windows assume little endian.
@@ -33,7 +33,7 @@
 #define bswap64 _byteswap_uint64
 #endif
 
-namespace ethash
+namespace xhash
 {
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
@@ -90,4 +90,4 @@ struct be
 };
 
 #endif
-}  // namespace ethash
+}  // namespace xhash

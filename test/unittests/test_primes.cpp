@@ -1,15 +1,15 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018-2019 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-#include <ethash/primes.h>
+#include <xhash/primes.h>
 #include <gtest/gtest.h>
 
 TEST(primes, find_largest_prime)
 {
-    /// Test pairs for find_largest_prime() are taken from generated ethash
+    /// Test pairs for find_largest_prime() are taken from generated xhash
     /// light cache and full dataset sizes, picked 50 at random from each collection.
-    /// See https://github.com/ethereum/wiki/wiki/Ethash#data-sizes.
+    /// See https://github.com/ethereum/wiki/wiki/XHash#data-sizes.
     static std::pair<int, int> test_pairs[] = {{262144, 262139}, {415744, 415729}, {440320, 440311},
         {505856, 505823}, {593920, 593903}, {667648, 667643}, {970752, 970747}, {972800, 972799},
         {1064960, 1064957}, {1083392, 1083391}, {1112064, 1112057}, {1122304, 1122287},
@@ -41,22 +41,22 @@ TEST(primes, find_largest_prime)
 
     for (const auto& t : test_pairs)
     {
-        int prime = ethash_find_largest_prime(t.first);
+        int prime = xhash_find_largest_prime(t.first);
         EXPECT_EQ(prime, t.second);
     }
 }
 
 TEST(primes, find_largest_prime_edge_cases)
 {
-    EXPECT_EQ(ethash_find_largest_prime(-2147483647), 0);
-    EXPECT_EQ(ethash_find_largest_prime(-100), 0);
-    EXPECT_EQ(ethash_find_largest_prime(-1), 0);
-    EXPECT_EQ(ethash_find_largest_prime(0), 0);
-    EXPECT_EQ(ethash_find_largest_prime(1), 0);
-    EXPECT_EQ(ethash_find_largest_prime(2), 2);
-    EXPECT_EQ(ethash_find_largest_prime(3), 3);
-    EXPECT_EQ(ethash_find_largest_prime(4), 3);
-    EXPECT_EQ(ethash_find_largest_prime(5), 5);
-    EXPECT_EQ(ethash_find_largest_prime(6), 5);
-    EXPECT_EQ(ethash_find_largest_prime(7), 7);
+    EXPECT_EQ(xhash_find_largest_prime(-2147483647), 0);
+    EXPECT_EQ(xhash_find_largest_prime(-100), 0);
+    EXPECT_EQ(xhash_find_largest_prime(-1), 0);
+    EXPECT_EQ(xhash_find_largest_prime(0), 0);
+    EXPECT_EQ(xhash_find_largest_prime(1), 0);
+    EXPECT_EQ(xhash_find_largest_prime(2), 2);
+    EXPECT_EQ(xhash_find_largest_prime(3), 3);
+    EXPECT_EQ(xhash_find_largest_prime(4), 3);
+    EXPECT_EQ(xhash_find_largest_prime(5), 5);
+    EXPECT_EQ(xhash_find_largest_prime(6), 5);
+    EXPECT_EQ(xhash_find_largest_prime(7), 7);
 }

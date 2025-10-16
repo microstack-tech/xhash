@@ -1,16 +1,16 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2021 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
 #pragma once
 
-#include <ethash/hash_types.h>
+#include <xhash/hash_types.h>
 
 extern "C" {
 
 /// Converts difficulty to boundary.
 ///
-/// The validity of the Ethash final hash is given as hash <= (2^256 / difficulty).
+/// The validity of the XHash final hash is given as hash <= (2^256 / difficulty).
 /// This function computes boundary = (2^256 / difficulty).
 ///
 /// The function is for testing purposes. The division is done using Knuth's D algorithm
@@ -20,5 +20,5 @@ extern "C" {
 ///
 /// @param difficulty  The difficulty value as big-endian 256-bit number.
 /// @return            The boundary value as big-endian 256-bit number.
-ethash_hash256 ethash_difficulty_to_boundary(const ethash_hash256* difficulty) noexcept;
+xhash_hash256 xhash_difficulty_to_boundary(const xhash_hash256* difficulty) noexcept;
 }

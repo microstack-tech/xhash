@@ -1,13 +1,13 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2021 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
 #include "../experimental/difficulty.h"
 #include "helpers.hpp"
-#include <ethash/ethash-internal.hpp>
 #include <gtest/gtest.h>
+#include <xhash/xhash-internal.hpp>
 
-using namespace ethash;
+using namespace xhash;
 
 namespace
 {
@@ -83,7 +83,7 @@ TEST(difficulty, difficulty_to_boundary)
     for (const auto& t : difficulty_test_cases)
     {
         const auto difficulty = to_hash256(t.difficulty_hex);
-        EXPECT_EQ(to_hex(ethash_difficulty_to_boundary(&difficulty)), t.boundary_hex);
+        EXPECT_EQ(to_hex(xhash_difficulty_to_boundary(&difficulty)), t.boundary_hex);
     }
 }
 
@@ -114,7 +114,7 @@ TEST(difficulty, check_against_difficulty)
         const auto difficulty_inc = inc(difficulty);
         if (less_equal(difficulty, difficulty_inc))
         {
-            const auto boundary2 = ethash_difficulty_to_boundary(&difficulty_inc);
+            const auto boundary2 = xhash_difficulty_to_boundary(&difficulty_inc);
             const auto check_difficulty = check_against_difficulty(hash, difficulty_inc);
             const auto check_boundary = less_equal(hash, boundary2);
             EXPECT_EQ(check_difficulty, check_boundary);

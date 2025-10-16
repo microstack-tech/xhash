@@ -1,15 +1,18 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018-2019 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-#include "ethash-internal.hpp"
+#include "xhash-internal.hpp"
 
 #include "primes.h"
-#include <ethash/keccak.hpp>
+#include <xhash/keccak.hpp>
+#include <xhash/sha3.hpp>
 #include <cstdlib>
 #include <cstring>
 
-namespace ethash
+#include <cstdio>
+
+namespace xhash
 {
 // Internal constants:
 constexpr static int light_cache_init_size = 1 << 24;
@@ -18,25 +21,34 @@ constexpr static int light_cache_rounds = 3;
 constexpr static int full_dataset_init_size = 1 << 30;
 constexpr static int full_dataset_growth = 1 << 23;
 constexpr static int full_dataset_item_parents = 256;
+constexpr static uint8_t PARALLAX_MAGIC[] = {'P', 'A', 'R', 'A', 'L', 'L', 'A', 'X', 0x01};
+
 
 // Verify constants:
-static_assert(sizeof(hash512) == ETHASH_LIGHT_CACHE_ITEM_SIZE, "");
-static_assert(sizeof(hash1024) == ETHASH_FULL_DATASET_ITEM_SIZE, "");
-static_assert(light_cache_item_size == ETHASH_LIGHT_CACHE_ITEM_SIZE, "");
-static_assert(full_dataset_item_size == ETHASH_FULL_DATASET_ITEM_SIZE, "");
-
+static_assert(sizeof(hash512) == XHASH_LIGHT_CACHE_ITEM_SIZE, "");
+static_assert(sizeof(hash1024) == XHASH_FULL_DATASET_ITEM_SIZE, "");
+static_assert(light_cache_item_size == XHASH_LIGHT_CACHE_ITEM_SIZE, "");
+static_assert(full_dataset_item_size == XHASH_FULL_DATASET_ITEM_SIZE, "");
 
 namespace
 {
-/// The core transformation of the FNV-1 hash function.
-/// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1_hash.
+/// The core transformation of the FNV-1 hash function (bytewise, little-endian over v).
+/// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1_hash
 [[clang::no_sanitize("unsigned-integer-overflow")]] inline uint32_t fnv1(
     uint32_t u, uint32_t v) noexcept
 {
-    static const uint32_t fnv_prime = 0x01000193;
-    return (u * fnv_prime) ^ v;
+    static const uint32_t fnv_prime = 0x01000193u;
+    // Consume v as 4 little-endian bytes: mul then xor each byte.
+    u *= fnv_prime;
+    u ^= static_cast<uint8_t>(v & 0xFF);
+    u *= fnv_prime;
+    u ^= static_cast<uint8_t>((v >> 8) & 0xFF);
+    u *= fnv_prime;
+    u ^= static_cast<uint8_t>((v >> 16) & 0xFF);
+    u *= fnv_prime;
+    u ^= static_cast<uint8_t>((v >> 24) & 0xFF);
+    return u;
 }
-
 
 inline hash512 fnv1(const hash512& u, const hash512& v) noexcept
 {
@@ -61,7 +73,7 @@ int find_epoch_number(const hash256& seed) noexcept
     static thread_local int cached_epoch_number = 0;
     static thread_local hash256 cached_seed = {};
 
-    // Load from memory once (memory will be clobbered by keccak256()).
+    // Load from memory once (memory will be clobbered by sha3_256()).
     const uint32_t seed_part = seed.word32s[0];
     const int e = cached_epoch_number;
     hash256 s = cached_seed;
@@ -70,7 +82,12 @@ int find_epoch_number(const hash256& seed) noexcept
         return e;
 
     // Try the next seed, will match for sequential epoch access.
-    s = keccak256(s);
+    {
+        uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(s)];
+        std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+        std::memcpy(buf + sizeof(PARALLAX_MAGIC), &s, sizeof(s));
+        s = sha3_256(buf, sizeof(buf));
+    }
     if (s.word32s[0] == seed_part)
     {
         cached_seed = s;
@@ -89,7 +106,10 @@ int find_epoch_number(const hash256& seed) noexcept
             return i;
         }
 
-        s = keccak256(s);
+        uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(s)];
+        std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+        std::memcpy(buf + sizeof(PARALLAX_MAGIC), &s, sizeof(s));
+        s = sha3_256(buf, sizeof(buf));
     }
 
     return -1;
@@ -99,11 +119,11 @@ namespace
 {
 void build_light_cache(hash512 cache[], int num_items, const hash256& seed) noexcept
 {
-    hash512 item = keccak512(seed.bytes, sizeof(seed));
+    hash512 item = sha3_512(seed.bytes, sizeof(seed));
     cache[0] = item;
     for (int i = 1; i < num_items; ++i)
     {
-        item = keccak512(item);
+        item = sha3_512(item);
         cache[i] = item;
     }
 
@@ -120,7 +140,7 @@ void build_light_cache(hash512 cache[], int num_items, const hash256& seed) noex
             // Second index.
             const uint32_t w = static_cast<uint32_t>(num_items + (i - 1)) % index_limit;
 
-            cache[i] = keccak512(bitwise_xor(cache[v], cache[w]));
+            cache[i] = sha3_512(bitwise_xor(cache[v], cache[w]));
         }
     }
 }
@@ -167,7 +187,7 @@ epoch_context_full* create_epoch_context(int epoch_number, bool full) noexcept
 
 /// Calculates a full dataset item.
 ///
-/// This consist of two 512-bit items defined by the Ethash specification, but these items
+/// This consist of two 512-bit items defined by the XHash specification, but these items
 /// are never needed separately. Here the computation is done interleaved for better performance.
 hash1024 calculate_dataset_item_1024(const epoch_context& context, uint32_t index) noexcept
 {
@@ -183,8 +203,8 @@ hash1024 calculate_dataset_item_1024(const epoch_context& context, uint32_t inde
     mix0.word32s[0] ^= le::uint32(seed0);
     mix1.word32s[0] ^= le::uint32(seed1);
 
-    mix0 = le::uint32s(keccak512(mix0));
-    mix1 = le::uint32s(keccak512(mix1));
+    mix0 = le::uint32s(sha3_512(mix0));
+    mix1 = le::uint32s(sha3_512(mix1));
 
     for (uint32_t j = 0; j < full_dataset_item_parents; ++j)
     {
@@ -195,7 +215,7 @@ hash1024 calculate_dataset_item_1024(const epoch_context& context, uint32_t inde
         mix1 = fnv1(mix1, le::uint32s(cache[t1 % num_cache_items]));
     }
 
-    return hash1024{{keccak512(le::uint32s(mix0)), keccak512(le::uint32s(mix1))}};
+    return hash1024{{sha3_512(le::uint32s(mix0)), sha3_512(le::uint32s(mix1))}};
 }
 
 namespace
@@ -209,7 +229,7 @@ inline hash512 hash_seed(const hash256& header_hash, uint64_t nonce) noexcept
     std::memcpy(&init_data[0], &header_hash, sizeof(header_hash));
     std::memcpy(&init_data[sizeof(header_hash)], &nonce, sizeof(nonce));
 
-    return keccak512(init_data, sizeof(init_data));
+    return sha3_512(init_data, sizeof(init_data));
 }
 
 inline hash256 hash_final(const hash512& seed, const hash256& mix_hash)
@@ -217,7 +237,7 @@ inline hash256 hash_final(const hash512& seed, const hash256& mix_hash)
     uint8_t final_data[sizeof(seed) + sizeof(mix_hash)];
     std::memcpy(&final_data[0], seed.bytes, sizeof(seed));
     std::memcpy(&final_data[sizeof(seed)], mix_hash.bytes, sizeof(mix_hash));
-    return keccak256(final_data, sizeof(final_data));
+    return sha3_256(final_data, sizeof(final_data));
 }
 
 inline hash256 hash_kernel(
@@ -228,6 +248,9 @@ inline hash256 hash_kernel(
     const uint32_t seed_init = le::uint32(seed.word32s[0]);
 
     hash1024 mix{{le::uint32s(seed), le::uint32s(seed)}};
+
+    // Mix starts with seed replicated
+    hash1024 mix_dbg{{le::uint32s(seed), le::uint32s(seed)}};
 
     for (uint32_t i = 0; i < num_dataset_accesses; ++i)
     {
@@ -247,7 +270,7 @@ inline hash256 hash_kernel(
         mix_hash.word32s[i / 4] = h3;
     }
 
-    return le::uint32s(mix_hash);
+    return mix_hash;
 }
 }  // namespace
 
@@ -272,8 +295,11 @@ search_result search_light(const epoch_context& context, const hash256& header_h
     for (uint64_t nonce = start_nonce; nonce < end_nonce; ++nonce)
     {
         result r = hash(context, header_hash, nonce);
+
         if (less_equal(r.final_hash, boundary))
+        {
             return {r, nonce};
+        }
     }
     return {};
 }
@@ -285,8 +311,13 @@ search_result search(const epoch_context_full& context, const hash256& header_ha
     for (uint64_t nonce = start_nonce; nonce < end_nonce; ++nonce)
     {
         result r = hash(context, header_hash, nonce);
+
+        const hash512 seed_dbg = hash_seed(header_hash, nonce);
+
         if (less_equal(r.final_hash, boundary))
+        {
             return {r, nonce};
+        }
     }
     return {};
 }
@@ -380,29 +411,36 @@ struct uint128
     // Check if p <= 2^256.
     // In most cases the p < 2^256 (i.e. top 4 words are zero) should be enough.
     const auto high_zero = (p[7] | p[6] | p[5] | p[4]) == 0;
-    if (high_zero)
-        return true;
-
-    // Lastly, check p == 2^256.
-    const auto low_zero = (p[3] | p[2] | p[1] | p[0]) == 0;
-    const auto high_one = (((p[7] | p[6] | p[5]) == 0) & (p[4] == 1)) != 0;
-    return low_zero && high_one;
+    return high_zero;
+    // if (high_zero)
+    //     return true;
+    //
+    // // Lastly, check p == 2^256.
+    // const auto low_zero = (p[3] | p[2] | p[1] | p[0]) == 0;
+    // const auto high_one = (((p[7] | p[6] | p[5]) == 0) & (p[4] == 1)) != 0;
+    // return low_zero && high_one;
 }
-}  // namespace ethash
+}  // namespace xhash
 
-using namespace ethash;
+using namespace xhash;
 
 extern "C" {
 
-ethash_hash256 ethash_calculate_epoch_seed(int epoch_number) noexcept
+xhash_hash256 xhash_calculate_epoch_seed(int epoch_number) noexcept
 {
-    ethash_hash256 epoch_seed = {};
+    xhash_hash256 epoch_seed = {};
     for (int i = 0; i < epoch_number; ++i)
-        epoch_seed = ethash_keccak256_32(epoch_seed.bytes);
+    {
+        uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(epoch_seed)];
+        std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+        std::memcpy(buf + sizeof(PARALLAX_MAGIC), epoch_seed.bytes, sizeof(epoch_seed));
+        const hash256 h = sha3_256(buf, sizeof(buf));
+        std::memcpy(epoch_seed.bytes, h.bytes, sizeof(h.bytes));
+    }
     return epoch_seed;
 }
 
-int ethash_calculate_light_cache_num_items(int epoch_number) noexcept
+int xhash_calculate_light_cache_num_items(int epoch_number) noexcept
 {
     constexpr int item_size = sizeof(hash512);
     constexpr int num_items_init = light_cache_init_size / item_size;
@@ -416,11 +454,11 @@ int ethash_calculate_light_cache_num_items(int epoch_number) noexcept
         return 0;
 
     int num_items_upper_bound = num_items_init + epoch_number * num_items_growth;
-    int num_items = ethash_find_largest_prime(num_items_upper_bound);
+    int num_items = xhash_find_largest_prime(num_items_upper_bound);
     return num_items;
 }
 
-int ethash_calculate_full_dataset_num_items(int epoch_number) noexcept
+int xhash_calculate_full_dataset_num_items(int epoch_number) noexcept
 {
     constexpr int item_size = sizeof(hash1024);
     constexpr int num_items_init = full_dataset_init_size / item_size;
@@ -434,32 +472,32 @@ int ethash_calculate_full_dataset_num_items(int epoch_number) noexcept
         return 0;
 
     int num_items_upper_bound = num_items_init + epoch_number * num_items_growth;
-    int num_items = ethash_find_largest_prime(num_items_upper_bound);
+    int num_items = xhash_find_largest_prime(num_items_upper_bound);
     return num_items;
 }
 
-epoch_context* ethash_create_epoch_context(int epoch_number) noexcept
+epoch_context* xhash_create_epoch_context(int epoch_number) noexcept
 {
     return create_epoch_context(epoch_number, false);
 }
 
-epoch_context_full* ethash_create_epoch_context_full(int epoch_number) noexcept
+epoch_context_full* xhash_create_epoch_context_full(int epoch_number) noexcept
 {
     return create_epoch_context(epoch_number, true);
 }
 
-void ethash_destroy_epoch_context_full(epoch_context_full* context) noexcept
+void xhash_destroy_epoch_context_full(epoch_context_full* context) noexcept
 {
-    ethash_destroy_epoch_context(context);
+    xhash_destroy_epoch_context(context);
 }
 
-void ethash_destroy_epoch_context(epoch_context* context) noexcept
+void xhash_destroy_epoch_context(epoch_context* context) noexcept
 {
     context->~epoch_context();
     std::free(context);
 }
 
-ethash_result ethash_hash(
+xhash_result xhash_hash(
     const epoch_context* context, const hash256* header_hash, uint64_t nonce) noexcept
 {
     const hash512 seed = hash_seed(*header_hash, nonce);
@@ -468,36 +506,35 @@ ethash_result ethash_hash(
 }
 
 
-ethash_errc ethash_verify_final_hash_against_difficulty(const hash256* header_hash,
+xhash_errc xhash_verify_final_hash_against_difficulty(const hash256* header_hash,
     const hash256* mix_hash, uint64_t nonce, const hash256* difficulty) noexcept
 {
     return check_against_difficulty(
                hash_final(hash_seed(*header_hash, nonce), *mix_hash), *difficulty) ?
-               ETHASH_SUCCESS :
-               ETHASH_INVALID_FINAL_HASH;
+               XHASH_SUCCESS :
+               XHASH_INVALID_FINAL_HASH;
 }
 
-ethash_errc ethash_verify_against_boundary(const epoch_context* context, const hash256* header_hash,
+xhash_errc xhash_verify_against_boundary(const epoch_context* context, const hash256* header_hash,
     const hash256* mix_hash, uint64_t nonce, const hash256* boundary) noexcept
 {
     const hash512 seed = hash_seed(*header_hash, nonce);
     if (!less_equal(hash_final(seed, *mix_hash), *boundary))
-        return ETHASH_INVALID_FINAL_HASH;
+        return XHASH_INVALID_FINAL_HASH;
 
     const hash256 expected_mix_hash = hash_kernel(*context, seed, calculate_dataset_item_1024);
-    return equal(expected_mix_hash, *mix_hash) ? ETHASH_SUCCESS : ETHASH_INVALID_MIX_HASH;
+    return equal(expected_mix_hash, *mix_hash) ? XHASH_SUCCESS : XHASH_INVALID_MIX_HASH;
 }
 
-ethash_errc ethash_verify_against_difficulty(const epoch_context* context,
-    const hash256* header_hash, const hash256* mix_hash, uint64_t nonce,
-    const hash256* difficulty) noexcept
+xhash_errc xhash_verify_against_difficulty(const epoch_context* context, const hash256* header_hash,
+    const hash256* mix_hash, uint64_t nonce, const hash256* difficulty) noexcept
 {
     const hash512 seed = hash_seed(*header_hash, nonce);
     if (!check_against_difficulty(hash_final(seed, *mix_hash), *difficulty))
-        return ETHASH_INVALID_FINAL_HASH;
+        return XHASH_INVALID_FINAL_HASH;
 
     const hash256 expected_mix_hash = hash_kernel(*context, seed, calculate_dataset_item_1024);
-    return equal(expected_mix_hash, *mix_hash) ? ETHASH_SUCCESS : ETHASH_INVALID_MIX_HASH;
+    return equal(expected_mix_hash, *mix_hash) ? XHASH_SUCCESS : XHASH_INVALID_MIX_HASH;
 }
 
 }  // extern "C"

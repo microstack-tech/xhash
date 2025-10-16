@@ -1,9 +1,9 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-#include <ethash/ethash.hpp>
-#include <ethash/global_context.hpp>
+#include <xhash/xhash.hpp>
+#include <xhash/global_context.hpp>
 #include <atomic>
 #include <chrono>
 #include <future>
@@ -18,49 +18,49 @@ using timer = std::chrono::steady_clock;
 
 namespace
 {
-class ethash_interface
+class xhash_interface
 {
 public:
-    ethash_interface() = default;
-    virtual ~ethash_interface() = default;
-    ethash_interface(const ethash_interface&) = delete;
-    ethash_interface& operator=(const ethash_interface&) = delete;
-    ethash_interface(ethash_interface&&) = delete;
-    ethash_interface& operator=(ethash_interface&&) = delete;
+    xhash_interface() = default;
+    virtual ~xhash_interface() = default;
+    xhash_interface(const xhash_interface&) = delete;
+    xhash_interface& operator=(const xhash_interface&) = delete;
+    xhash_interface(xhash_interface&&) = delete;
+    xhash_interface& operator=(xhash_interface&&) = delete;
 
     virtual void search(
-        const ethash::hash256& header_hash, uint64_t nonce, size_t iterations) const noexcept = 0;
+        const xhash::hash256& header_hash, uint64_t nonce, size_t iterations) const noexcept = 0;
 };
 
-class ethash_light : public ethash_interface
+class xhash_light : public xhash_interface
 {
-    const ethash::epoch_context& context;
+    const xhash::epoch_context& context;
 
 public:
-    explicit ethash_light(int epoch_number)
-      : context(ethash::get_global_epoch_context(epoch_number))
+    explicit xhash_light(int epoch_number)
+      : context(xhash::get_global_epoch_context(epoch_number))
     {}
 
-    void search(const ethash::hash256& header_hash, uint64_t nonce,
+    void search(const xhash::hash256& header_hash, uint64_t nonce,
         size_t iterations) const noexcept override
     {
-        ethash::search_light(context, header_hash, {}, nonce, iterations);
+        xhash::search_light(context, header_hash, {}, nonce, iterations);
     }
 };
 
-class ethash_full : public ethash_interface
+class xhash_full : public xhash_interface
 {
-    const ethash::epoch_context_full& context;
+    const xhash::epoch_context_full& context;
 
 public:
-    explicit ethash_full(int epoch_number)
-      : context(ethash::get_global_epoch_context_full(epoch_number))
+    explicit xhash_full(int epoch_number)
+      : context(xhash::get_global_epoch_context_full(epoch_number))
     {}
 
-    void search(const ethash::hash256& header_hash, uint64_t nonce,
+    void search(const xhash::hash256& header_hash, uint64_t nonce,
         size_t iterations) const noexcept override
     {
-        ethash::search(context, header_hash, {}, nonce, iterations);
+        xhash::search(context, header_hash, {}, nonce, iterations);
     }
 };
 
@@ -68,10 +68,10 @@ public:
 std::atomic<int> shared_block_number{0};
 std::atomic<int> num_hashes{0};
 
-void worker(bool light, const ethash::hash256& header_hash, uint64_t start_nonce, int batch_size)
+void worker(bool light, const xhash::hash256& header_hash, uint64_t start_nonce, int batch_size)
 {
     int current_epoch = -1;
-    std::unique_ptr<ethash_interface> ei;
+    std::unique_ptr<xhash_interface> ei;
     uint64_t i = 0;
     size_t w = static_cast<size_t>(batch_size);
     while (true)
@@ -80,12 +80,12 @@ void worker(bool light, const ethash::hash256& header_hash, uint64_t start_nonce
         if (block_number < 0)
             break;
 
-        int e = ethash::get_epoch_number(block_number);
+        int e = xhash::get_epoch_number(block_number);
 
         if (current_epoch != e)
         {
             ei.reset(
-                light ? static_cast<ethash_interface*>(new ethash_light{e}) : new ethash_full{e});
+                light ? static_cast<xhash_interface*>(new xhash_light{e}) : new xhash_full{e});
             current_epoch = e;
         }
 
@@ -139,7 +139,7 @@ int main(int argc, const char* argv[])
     const uint64_t divisor = static_cast<uint64_t>(num_threads);
     const uint64_t nonce_space_per_thread = std::numeric_limits<uint64_t>::max() / divisor;
 
-    const ethash::hash256 header_hash{};
+    const xhash::hash256 header_hash{};
 
     shared_block_number.store(start_block_number, std::memory_order_relaxed);
     std::vector<std::future<void>> futures;
@@ -159,7 +159,7 @@ int main(int argc, const char* argv[])
     auto start_time = timer::now();
     auto time = start_time;
     static constexpr int khps_mbps_ratio =
-        ethash::num_dataset_accesses * ethash::full_dataset_item_size / 1024;
+        xhash::num_dataset_accesses * xhash::full_dataset_item_size / 1024;
 
     double current_duration = 0;
     double all_duration = 0;
@@ -184,7 +184,7 @@ int main(int argc, const char* argv[])
 
         shared_block_number.store(block_number + 1, std::memory_order_relaxed);
 
-        int e = ethash::get_epoch_number(block_number);
+        int e = xhash::get_epoch_number(block_number);
 
         current_khps = double(current_hashes) / current_duration;
         average_khps = double(all_hashes) / all_duration;

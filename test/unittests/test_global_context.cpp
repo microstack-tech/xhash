@@ -1,17 +1,17 @@
-// ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// xhash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
 #include "helpers.hpp"
 #include "test_cases.hpp"
-#include <ethash/ethash-internal.hpp>
-#include <ethash/global_context.hpp>
+#include <xhash/xhash-internal.hpp>
+#include <xhash/global_context.hpp>
 #include <gtest/gtest.h>
 #include <array>
 #include <future>
 #include <thread>
 
-using namespace ethash;
+using namespace xhash;
 
 TEST(managed_multithreaded, hash_all)
 {
@@ -77,7 +77,7 @@ TEST(managed_multithreaded, verify_all)
                 auto& context = get_global_epoch_context(epoch_number);
                 const auto ec =
                     verify_against_boundary(context, header_hash, mix_hash, nonce, boundary);
-                EXPECT_EQ(ec, ETHASH_SUCCESS);
+                EXPECT_EQ(ec, XHASH_SUCCESS);
             }
         });
     }
@@ -104,7 +104,7 @@ TEST(managed_multithreaded, verify_parallel)
     }
 
     for (auto& f : futures)
-        EXPECT_EQ(f.get(), ETHASH_SUCCESS);
+        EXPECT_EQ(f.get(), XHASH_SUCCESS);
 }
 
 TEST(managed_multithreaded, get_epoch_context_random)

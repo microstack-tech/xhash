@@ -1,4 +1,4 @@
-// Ethash: C/C++ implementation of Ethash, the Ethereum Proof of Work algorithm.
+// XHash: C/C++ implementation of XHash, the Ethereum Proof of Work algorithm.
 // Copyright 2018 Pawel Bylica.
 // SPDX-License-Identifier: Apache-2.0
 
