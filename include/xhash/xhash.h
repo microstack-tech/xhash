@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <xhash/hash_types.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <xhash/hash_types.h>
 
 #ifndef __has_cpp_attribute
 #define __has_cpp_attribute(X) 0
@@ -25,13 +25,9 @@
 extern "C" {
 #endif
 
-/**
- * The XHash algorithm revision implemented as specified in the XHash spec
- * https://github.com/ethereum/wiki/wiki/XHash.
- */
 #define XHASH_REVISION "23"
 
-#define XHASH_EPOCH_LENGTH 30000
+#define XHASH_EPOCH_LENGTH 720
 #define XHASH_LIGHT_CACHE_ITEM_SIZE 64
 #define XHASH_FULL_DATASET_ITEM_SIZE 128
 #define XHASH_NUM_DATASET_ACCESSES 64

@@ -14,6 +14,7 @@ add_executable(
     test_difficulty.cpp
     test_xhash.cpp
     test_keccak.cpp
+    test_sha3.cpp
     test_global_context.cpp
     test_primes.cpp
     test_version.cpp
@@ -26,8 +27,8 @@ target_include_directories(xhash-test PRIVATE ${XHASH_PRIVATE_INCLUDE_DIR})
 set_target_properties(xhash-test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ..)
 
 if(SANITIZE AND CMAKE_SYSTEM_NAME STREQUAL Linux AND CMAKE_CXX_FLAGS MATCHES -m32)
-    # Workaround for linking with phread when building for 32-bit and with sanitizer.
-    target_link_libraries(xhash-test PRIVATE pthread)
+  # Workaround for linking with phread when building for 32-bit and with sanitizer.
+  target_link_libraries(xhash-test PRIVATE pthread)
 endif()
 
 gtest_discover_tests(xhash-test TEST_PREFIX ${PROJECT_NAME}/unittests/)
