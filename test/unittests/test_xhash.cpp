@@ -7,9 +7,9 @@
 #endif
 
 #include <xhash/endianness.hpp>
+#include <xhash/keccak.hpp>
 #include <xhash/xhash-internal.hpp>
 #include <xhash/xhash.hpp>
-#include <xhash/keccak.hpp>
 
 #include "../experimental/difficulty.h"
 #include "helpers.hpp"
@@ -359,11 +359,11 @@ TEST(xhash, get_epoch_number)
 {
     EXPECT_EQ(get_epoch_number(0), 0);
     EXPECT_EQ(get_epoch_number(1), 0);
-    EXPECT_EQ(get_epoch_number(29999), 0);
-    EXPECT_EQ(get_epoch_number(30000), 1);
-    EXPECT_EQ(get_epoch_number(30001), 1);
-    EXPECT_EQ(get_epoch_number(30002), 1);
-    EXPECT_EQ(get_epoch_number(5000000), 166);
+    EXPECT_EQ(get_epoch_number(719), 0);
+    EXPECT_EQ(get_epoch_number(720), 1);
+    EXPECT_EQ(get_epoch_number(721), 1);
+    EXPECT_EQ(get_epoch_number(722), 1);
+    EXPECT_EQ(get_epoch_number(112000), 166);
     EXPECT_EQ(get_epoch_number(max_epoch_number * epoch_length), max_epoch_number);
     constexpr auto max_block = max_epoch_number * epoch_length + epoch_length - 1;
     EXPECT_EQ(get_epoch_number(max_block), max_epoch_number);
