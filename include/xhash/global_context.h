@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <xhash/global_context.h>
 #include <xhash/xhash.h>
 
 #ifdef __cplusplus

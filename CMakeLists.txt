@@ -16,7 +16,7 @@ cmake_dependent_option(XHASH_BUILD_GLOBAL_CONTEXT "Build xhash::global-context l
 option(XHASH_TESTING "Build unit tests" NO)
 
 if(XHASH_TESTING)
-    include(cmake/Hunter/init.cmake)
+  include(cmake/Hunter/init.cmake)
 endif()
 
 project(xhash)
@@ -24,7 +24,7 @@ set(PROJECT_VERSION 1.1.0)
 
 cable_configure_compiler(NO_STACK_PROTECTION)
 if(CABLE_COMPILER_GNULIKE)
-    add_compile_options(
+  add_compile_options(
         # -Wcast-align  #TODO: Build fails on mips64
         -Wcast-qual
         -Wmissing-declarations
@@ -38,29 +38,29 @@ if(CABLE_COMPILER_GNULIKE)
         $<$<CXX_COMPILER_ID:GNU>:-Wno-attributes>
     )
 
-    if(MSVC) # clang-cl
-        add_compile_options(
+  if(MSVC) # clang-cl
+    add_compile_options(
             -Wno-exit-time-destructors
             -Wno-global-constructors
             $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++98-compat-pedantic>
             $<$<COMPILE_LANGUAGE:CXX>:-Wno-old-style-cast>
         )
-    endif()
+  endif()
 elseif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-    # For Win32 builds allow allocating more than 2 GB of memory.
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
+  # For Win32 builds allow allocating more than 2 GB of memory.
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
-    set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_DEBUG} -fprofile-instr-generate -fcoverage-mapping")
-    set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} -fprofile-instr-generate -fcoverage-mapping")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
+  set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_DEBUG} -fprofile-instr-generate -fcoverage-mapping")
+  set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} -fprofile-instr-generate -fcoverage-mapping")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
-    set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_DEBUG} --coverage")
-    set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
+  set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_DEBUG} --coverage")
+  set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
 endif()
 
 set(include_dir ${PROJECT_SOURCE_DIR}/include)
@@ -68,8 +68,8 @@ set(include_dir ${PROJECT_SOURCE_DIR}/include)
 add_subdirectory(lib)
 
 if(XHASH_TESTING)
-    enable_testing()
-    add_subdirectory(test)
+  enable_testing()
+  add_subdirectory(test)
 endif()
 
 
@@ -80,15 +80,15 @@ install(
 )
 
 if(XHASH_INSTALL_CMAKE_CONFIG)
-    write_basic_package_version_file(xhashConfigVersion.cmake COMPATIBILITY SameMajorVersion)
-    configure_package_config_file(cmake/Config.cmake.in xhashConfig.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xhash)
+  write_basic_package_version_file(xhashConfigVersion.cmake COMPATIBILITY SameMajorVersion)
+  configure_package_config_file(cmake/Config.cmake.in xhashConfig.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xhash)
 
-    install(
+  install(
         EXPORT xhashTargets
         NAMESPACE xhash::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xhash
     )
-    install(
+  install(
         FILES
         ${CMAKE_CURRENT_BINARY_DIR}/xhashConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/xhashConfigVersion.cmake

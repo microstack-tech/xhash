@@ -4,8 +4,8 @@
 
 #include "../experimental/difficulty.h"
 #include "helpers.hpp"
-#include <xhash/xhash-internal.hpp>
 #include <gtest/gtest.h>
+#include <xhash/xhash-internal.hpp>
 
 using namespace xhash;
 

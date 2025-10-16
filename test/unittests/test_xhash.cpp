@@ -8,6 +8,7 @@
 
 #include <xhash/endianness.hpp>
 #include <xhash/keccak.hpp>
+#include <xhash/sha3.hpp>
 #include <xhash/xhash-internal.hpp>
 #include <xhash/xhash.hpp>
 
@@ -24,6 +25,7 @@ using namespace xhash;
 
 namespace
 {
+constexpr uint8_t PARALLAX_MAGIC[] = {'P', 'A', 'R', 'A', 'L', 'L', 'A', 'X', 0x01};
 struct test_context_full : epoch_context
 {
     hash1024* full_dataset;
@@ -225,13 +227,13 @@ struct epoch_seed_test_case
 
 constexpr epoch_seed_test_case epoch_seed_test_cases[] = {
     {0, "0000000000000000000000000000000000000000000000000000000000000000"},
-    {1, "290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563"},
-    {171, "a9b0e0c9aca72c07ba06b5bbdae8b8f69e61878301508473379bb4f71807d707"},
-    {2048, "20a7678ca7b50829183baac2e1e3c43fa3c4bcbc171b11cf5a9f30bebd172920"},
-    {29998, "1222b1faed7f93098f8ae498621fb3479805a664b70186063861c46596c66164"},
-    {29999, "ee1d0f61b054dff0f3025ebba821d405c8dc19a983e582e9fa5436fc3e7a07d8"},
-    {max_epoch_number - 1, "9472a82f992649315e3977120843a5a246e375715bd70ee98b3dd77c63154e99"},
-    {max_epoch_number, "09b435f2d92d0ddee038c379be8db1f895c904282e9ceb790f519a6aa3f83810"},
+    {1, "09b8984fe53f320f51473190cd076a5dcd4a808a788a589b209a635d81ce30d8"},
+    {171, "5ea1477b5b1f38ac052c0ef045f83338b69b5c6f0f7a6a6dea723768ed4a81a8"},
+    {2048, "a0ab50464f6557186a50ded77787146eca4aa1e9c19ad9b50f420c127aafbee8"},
+    {718, "ecb2651fc32ea1ce131ca20831d72d4ce9bd601d54e6bc7bef5151850f273ed0"},
+    {719, "e29a8b9152378083ba1c69a7b4ea234d4bffde0af740ac2556cd8a91560ca5e0"},
+    {max_epoch_number - 1, "1ea564f745966148595d114c6e7a38a4810bf5068be58a5e28dbf5af3becbdb7"},
+    {max_epoch_number, "f8b299f2aecb228234495d3e70259be8d103574b60ea1d70d182b7002b95416f"},
 };
 
 TEST(xhash, calculate_epoch_seed)
@@ -246,28 +248,28 @@ TEST(xhash, calculate_epoch_seed)
 
 TEST(xhash, find_epoch_number_double_ascending)
 {
-    const hash256 seed_29998 = to_hash256(epoch_seed_test_cases[4].epoch_seed_hex);
-    const hash256 seed_29999 = to_hash256(epoch_seed_test_cases[5].epoch_seed_hex);
+    const hash256 seed_718 = to_hash256(epoch_seed_test_cases[4].epoch_seed_hex);
+    const hash256 seed_719 = to_hash256(epoch_seed_test_cases[5].epoch_seed_hex);
 
-    int epoch = find_epoch_number(seed_29998);
-    EXPECT_EQ(epoch, 29998);
+    int epoch = find_epoch_number(seed_718);
+    EXPECT_EQ(epoch, 718);
 
     // The second call should be fast.
-    epoch = find_epoch_number(seed_29999);
-    EXPECT_EQ(epoch, 29999);
+    epoch = find_epoch_number(seed_719);
+    EXPECT_EQ(epoch, 719);
 }
 
 TEST(xhash, find_epoch_number_double_descending)
 {
-    const hash256 seed_29998 = to_hash256(epoch_seed_test_cases[4].epoch_seed_hex);
-    const hash256 seed_29999 = to_hash256(epoch_seed_test_cases[5].epoch_seed_hex);
+    const hash256 seed_718 = to_hash256(epoch_seed_test_cases[4].epoch_seed_hex);
+    const hash256 seed_719 = to_hash256(epoch_seed_test_cases[5].epoch_seed_hex);
 
-    int epoch = find_epoch_number(seed_29999);
-    EXPECT_EQ(epoch, 29999);
+    int epoch = find_epoch_number(seed_719);
+    EXPECT_EQ(epoch, 719);
 
     // The second call should be fast.
-    epoch = find_epoch_number(seed_29998);
-    EXPECT_EQ(epoch, 29998);
+    epoch = find_epoch_number(seed_718);
+    EXPECT_EQ(epoch, 718);
 }
 
 TEST(xhash, find_epoch_number_sequential)
@@ -277,14 +279,21 @@ TEST(xhash, find_epoch_number_sequential)
     {
         auto e = find_epoch_number(seed);
         EXPECT_EQ(e, i);
-        seed = keccak256(seed);
+        uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(seed)];
+        std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+        std::memcpy(buf + sizeof(PARALLAX_MAGIC), seed.bytes, sizeof(seed));
+        seed = sha3_256(buf, sizeof(buf));
     }
 }
 
 TEST(xhash, find_epoch_number_max)
 {
     const auto seed_max = to_hash256(epoch_seed_test_cases[7].epoch_seed_hex);
-    const auto seed_out_of_range = keccak256(seed_max);
+
+    uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(seed_max)];
+    std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+    std::memcpy(buf + sizeof(PARALLAX_MAGIC), seed_max.bytes, sizeof(seed_max));
+    const auto seed_out_of_range = sha3_256(buf, sizeof(buf));
 
     find_epoch_number({});  // Reset cache.
     EXPECT_EQ(find_epoch_number(seed_out_of_range), -1);
@@ -300,7 +309,10 @@ TEST(xhash, find_epoch_number_sequential_gap)
     {
         auto e = find_epoch_number(seed);
         EXPECT_EQ(e, i);
-        seed = keccak256(seed);
+        uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(seed)];
+        std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+        std::memcpy(buf + sizeof(PARALLAX_MAGIC), seed.bytes, sizeof(seed));
+        seed = sha3_256(buf, sizeof(buf));
     }
 }
 
@@ -344,7 +356,10 @@ TEST(xhash_multithreaded, find_epoch_number_sequential)
         {
             auto e = find_epoch_number(seed);
             EXPECT_EQ(e, i);
-            seed = keccak256(seed);
+            uint8_t buf[sizeof(PARALLAX_MAGIC) + sizeof(seed)];
+            std::memcpy(buf, PARALLAX_MAGIC, sizeof(PARALLAX_MAGIC));
+            std::memcpy(buf + sizeof(PARALLAX_MAGIC), seed.bytes, sizeof(seed));
+            seed = sha3_256(buf, sizeof(buf));
         }
     };
 
@@ -389,7 +404,7 @@ TEST(xhash, light_cache)
         const uint8_t* const light_cache_data = context->light_cache[0].bytes;
         const size_t light_cache_size =
             static_cast<size_t>(context->light_cache_num_items) * sizeof(context->light_cache[0]);
-        const hash256 light_cache_hash = keccak256(light_cache_data, light_cache_size);
+        const hash256 light_cache_hash = sha3_256(light_cache_data, light_cache_size);
         EXPECT_EQ(light_cache_hash, to_hash256(t.hash));
     }
 }
